@@ -1,0 +1,127 @@
+eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2xvZ2luIiwiaWF0IjoxNzYzMTAxNTUxLCJleHAiOjE3NjMxMDUxNTEsIm5iZiI6MTc2MzEwMTU1MSwianRpIjoic1ZXUzdpWGoyNEVNQmFBQSIsInN1YiI6IjEiLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.tgfSU2HgRsMKhWanasDuvZzzfIJuu0b2NY7K8SrMxCQ
+
+POST DE PRODUCTOS
+{
+  "brand": "Marca1",
+  "model": "Modelo1",
+  "cpu": "cpu1",
+  "ram": "ram1",
+  "storage": "storage1",
+  "display": "display1",
+  "image_url": "youtube.com",
+  "description": "producto insertado correctamente",
+}
+
+PATCH DE PRODUCTOS
+{
+    "brand": "Acer",
+    "model": "Aspire 5",
+    "cpu": "Intel Core i5",
+    "ram": "8GB",
+    "storage": "256GB SSD",
+    "display": "15.6 FHD",
+    "image_url": "https://example.com/acer.jpg",
+    "description": "Laptop actualizada"
+}
+
+POST DE CATEGORIAS
+{
+  "category_name":"ejemplo"
+}
+
+PATCH DE CATEGORIAS
+{
+   "category_name":"ejemplo_actualizado"
+}
+
+POST DE STORES
+{
+  "name":"Coppel",
+  "base_url":"coppel.com"
+}
+
+PATCH DE STORES
+{
+  "name":"Liverpool",
+  "base_url":"liverpool.com"
+}
+
+POST DE PRICES
+{
+  "product_id":"1",
+  "store_id":"1",
+  "price":"3000.00",
+  "product_url":"url.com"
+}
+
+PATCH DE PRICES
+{
+  "product_id":"1",
+  "store_id":"1",
+  "price":"1200.00",
+  "product_url":"url.com"
+}
+
+POST DE PC_BUILDS
+{
+  "user_id":"1",
+  "build_name":"ejemplop",
+  "total_price":"20000.20"
+}
+
+PATCH DE PC_BUILDS
+{
+  "user_id":"1",
+  "build_name":"ejemplo",
+  "total_price":"30000.20"
+}
+
+POST DE COMPABILITY
+{
+  "product_id_1":"2",
+  "product_id_2":"2",
+  "is_comparable":"1"
+}
+
+PATCH DE COMPABILITY
+{
+  "product_id_1":"2",
+  "product_id_2":"2",
+  "is_comparable":"0"
+}
+
+POST DE BUILD DETAILS
+{
+  "build_id":"1",
+  "product_id":"2"
+}
+
+PATCH DE BUILD DETAILS
+{
+  "build_id":"1",
+  "product_id":"1"
+}
+
+POST DE FAVORITES
+{
+  "user_id":"1",
+  "category_id":"2",
+  "reference":"20",
+  "saved_at":"now()"
+}
+
+PATCH DE FAVORITES
+{
+  "user_id":"1",
+  "category_id":"1",
+  "reference":"20",
+  "saved_at":"now()"
+}
+
+POST DE HISTORY 
+{
+  "user_id":"1",
+  "price_id":"2"
+}
+
+PATCH DE HISTORY
