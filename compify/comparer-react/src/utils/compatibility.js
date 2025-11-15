@@ -5,17 +5,18 @@ import { mockComponents } from '../data/mockComponents';
 /**
  * Verifica la compatibilidad entre componentes seleccionados
  * @param {Object} currentBuild - El build actual con los componentes seleccionados
+ * @param {Object} componentsData - Datos de componentes (mock o de la API)
  * @returns {Array} - Array de issues de compatibilidad
  */
-export function checkCompatibility(currentBuild) {
+export function checkCompatibility(currentBuild, componentsData = mockComponents) {
   const issues = [];
 
   // Obtener componentes seleccionados
-  const cpu = currentBuild.cpu ? mockComponents.cpu.items.find(i => i.id === currentBuild.cpu) : null;
-  const motherboard = currentBuild.motherboard ? mockComponents.motherboard.items.find(i => i.id === currentBuild.motherboard) : null;
-  const ram = currentBuild.ram ? mockComponents.ram.items.find(i => i.id === currentBuild.ram) : null;
-  const gpu = currentBuild.gpu ? mockComponents.gpu.items.find(i => i.id === currentBuild.gpu) : null;
-  const psu = currentBuild.psu ? mockComponents.psu.items.find(i => i.id === currentBuild.psu) : null;
+  const cpu = currentBuild.cpu ? componentsData.cpu?.items?.find(i => i.id === currentBuild.cpu) : null;
+  const motherboard = currentBuild.motherboard ? componentsData.motherboard?.items?.find(i => i.id === currentBuild.motherboard) : null;
+  const ram = currentBuild.ram ? componentsData.ram?.items?.find(i => i.id === currentBuild.ram) : null;
+  const gpu = currentBuild.gpu ? componentsData.gpu?.items?.find(i => i.id === currentBuild.gpu) : null;
+  const psu = currentBuild.psu ? componentsData.psu?.items?.find(i => i.id === currentBuild.psu) : null;
 
   // Verificar compatibilidad CPU - Motherboard
   if (cpu && motherboard) {
@@ -24,9 +25,7 @@ export function checkCompatibility(currentBuild) {
         level: 'critical',
         components: ['CPU', 'Placa Base'],
         message: `❌ INCOMPATIBLE: <strong>${cpu.name}</strong> (socket ${cpu.socket.toUpperCase()}) NO es compatible con <strong>${motherboard.name}</strong> (socket ${motherboard.socket.toUpperCase()})`,
-        solution: cpu.socket === 'intel-1700'
-          ? '💡 Necesitas una placa base con socket Intel LGA 1700'
-          : '💡 Necesitas una placa base con socket AMD AM5'
+        solution: `💡 Necesitas una placa base con socket ${cpu.socket.toUpperCase()}`
       });
     }
   } else if (cpu && !motherboard) {
