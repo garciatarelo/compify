@@ -2,132 +2,100 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Product;
+use Illuminate\Http\Request;
 
 class ProductsController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * GET /api/products
      */
     public function index()
     {
-        $data = Product::with('category')->get();
-        
+        $products = Product::with('category')->get();
+
         return response()->json([
-            'status' => 'ok',
-            'data' => $data
+            "status" => "ok",
+            "data" => $products,
+            "message" => "Lista de productos obtenida exitosamente"
         ]);
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * POST /api/products
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'category_id' => 'required|exists:categories,category_id',
-            'brand' => 'required|string|max:50',
-            'model' => 'required|string|max:100',
-            'cpu' => 'nullable|string|max:100',
-            'ram' => 'nullable|string|max:20',
-            'storage' => 'nullable|string|max:50',
-            'display' => 'nullable|string|max:50',
-            'image_url' => 'nullable|string|max:255',
+            'category_id' => 'required|integer|exists:categories,category_id',
+            'brand'       => 'required|string|max:100',
+            'model'       => 'required|string|max:150',
+            'image_url'   => 'nullable|string',
             'description' => 'nullable|string',
+            'base_price'  => 'nullable|numeric',
+            'specs'       => 'nullable|array' 
         ]);
 
-        $data = Product::create($validated);
+        $product = Product::create($validated);
 
         return response()->json([
-            'status' => 'ok',
-            'message' => 'Producto insertado correctamente',
-            'data' => $data
+            "status" => "created",
+            "message" => "Producto creado exitosamente",
+            "data" => $product
         ], 201);
     }
 
     /**
-     * Display the specified resource.
+     * GET /api/products/{id}
      */
-    public function show(string $id)
+    public function show($id)
     {
-        $data = Product::with('category', 'prices.store')->find($id);
-        
-        if ($data) {
-            return response()->json([
-                'status' => 'ok',
-                'message' => 'Producto encontrado correctamente',
-                'data' => $data
-            ]);
-        }
-        
+        $product = Product::with('category')->findOrFail($id);
+
         return response()->json([
-            'status' => 'error',
-            'message' => 'Producto no encontrado',
-        ], 404);
+            "status" => "ok",
+            "message" => "Producto obtenido exitosamente",
+            "data" => $product
+        ]);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * PUT /api/products/{id}
      */
-    public function edit(string $id)
+    public function update(Request $request, $id)
     {
-        //
-    }
+        $product = Product::findOrFail($id);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
         $validated = $request->validate([
-            'category_id' => 'required|exists:categories,category_id',
-            'brand' => 'required|string|max:50',
-            'model' => 'required|string|max:100',
-            'cpu' => 'nullable|string|max:100',
-            'ram' => 'nullable|string|max:20',
-            'storage' => 'nullable|string|max:50',
-            'display' => 'nullable|string|max:50',
-            'image_url' => 'nullable|string|max:255',
+            'category_id' => 'sometimes|integer|exists:categories,category_id',
+            'brand'       => 'sometimes|string|max:100',
+            'model'       => 'sometimes|string|max:150',
+            'image_url'   => 'nullable|string',
             'description' => 'nullable|string',
+            'base_price'  => 'nullable|numeric',
+            'specs'       => 'nullable|array' 
         ]);
 
-        $data = Product::findOrFail($id);
-        $data->update($validated);
+        $product->update($validated);
 
         return response()->json([
-            'status' => 'ok',
-            'message' => 'Producto actualizado correctamente',
-            'data' => $data
+            "status" => "updated",
+            "message" => "Producto actualizado exitosamente",
+            "data" => $product
         ]);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * DELETE /api/products/{id}
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        $data = Product::find($id);
-        
-        if ($data) {
-            $data->delete();
-            return response()->json([
-                'status' => 'ok',
-                'message' => 'Producto eliminado correctamente',
-            ]);
-        }
-        
+        Product::findOrFail($id)->delete();
+
         return response()->json([
-            'status' => 'error',
-            'message' => 'Producto no encontrado',
-        ], 404);
+            "status" => "deleted",
+            "message" => "Producto eliminado exitosamente",
+            "data" => null
+        ]);
     }
 }

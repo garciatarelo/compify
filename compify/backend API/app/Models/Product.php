@@ -3,23 +3,26 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Product extends Model
 {
-    protected $table = 'products';
+    use HasFactory;
+
+    // Si tu PK no es "id"
     protected $primaryKey = 'product_id';
-    public $timestamps = false;
 
     protected $fillable = [
         'category_id',
         'brand',
         'model',
-        'cpu',
-        'ram',
-        'storage',
-        'display',
         'image_url',
         'description',
+        'specs',
+        'base_price'
+    ];
+
+    protected $hidden = [
         'component_type',
         'socket',
         'tdp',
@@ -38,31 +41,17 @@ class Product extends Model
         'efficiency',
         'storage_type',
         'storage_capacity',
-        'base_price',
+        'created_at',
+        'updated_at',
+    ];
+
+    
+    protected $casts = [
+        'specs' => 'array',   // ← convierte el JSON a array automáticamente
     ];
 
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_id', 'category_id');
-    }
-
-    public function prices()
-    {
-        return $this->hasMany(Price::class, 'product_id', 'product_id');
-    }
-
-    public function buildDetails()
-    {
-        return $this->hasMany(BuildDetail::class, 'product_id', 'product_id');
-    }
-
-    public function compatibilitiesAs1()
-    {
-        return $this->hasMany(Compatibility::class, 'product_id_1', 'product_id');
-    }
-
-    public function compatibilitiesAs2()
-    {
-        return $this->hasMany(Compatibility::class, 'product_id_2', 'product_id');
     }
 }

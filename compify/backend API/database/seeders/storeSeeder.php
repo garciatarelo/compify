@@ -17,12 +17,12 @@ class storeSeeder extends Seeder
             [
                 'store_id' => 1,
                 'name_store' => 'Amazon',
-                'base_url' => 'https://www.amazon.com',
+                'store_url' => 'https://www.amazon.com',
             ],
             [
                 'store_id' => 2,
                 'name_store' => 'MercadoLibre',
-                'base_url' => 'https://www.mercadolibre.com',
+                'store_url' => 'https://www.mercadolibre.com',
             ],
         ]);
     }

@@ -13,10 +13,19 @@ return new class extends Migration
     {
         Schema::create('favorites', function (Blueprint $table) {
             $table->id('favorite_id');
-            $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
-            $table->foreignId('category_id')->constrained('categories', 'category_id')->onDelete('cascade');
-            $table->integer('reference');
-            $table->timestamp('saved_at');
+
+            $table->foreignId('user_id')
+                ->constrained('users', 'user_id')
+                ->onDelete('cascade');
+
+            $table->foreignId('category_id')
+                ->constrained('categories', 'category_id')
+                ->onDelete('cascade');
+
+            $table->integer('reference'); // product_id de referencia
+            $table->dateTime('saved_at');
+
+            $table->timestamps();
         });
     }
 

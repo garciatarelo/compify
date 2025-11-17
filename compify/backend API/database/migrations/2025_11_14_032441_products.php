@@ -13,15 +13,19 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id('product_id');
-            $table->foreignId('category_id')->constrained('categories', 'category_id')->onDelete('cascade');
-            $table->string('brand', 50);
-            $table->string('model', 100);
-            $table->string('cpu', 100);
-            $table->string('ram', 20);
-            $table->string('storage', 50);
-            $table->string('display', 50);
-            $table->string('image_url', 255);
-            $table->text('description');
+        $table->foreignId('category_id')
+              ->constrained('categories', 'category_id')
+              ->onDelete('cascade');
+
+        $table->text('brand');
+        $table->text('model');
+        $table->string('image_url', 255);
+        $table->text('description');
+
+        //Especificaciones dinamicas en formato JSON
+        $table->json('specs');
+
+        $table->timestamps();
         });
     }
 

@@ -11,12 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('compatibilities', function (Blueprint $table) {
-            $table->id('com_id');
-            $table->foreignId('product_id_1')->constrained('products', 'product_id')->onDelete('cascade');
-            $table->foreignId('product_id_2')->constrained('products', 'product_id')->onDelete('cascade');
-            $table->tinyInteger('is_comparable');
-        });
+            Schema::create('compatibilities', function (Blueprint $table) {
+            $table->id('compatibility_id');
+            
+            $table->foreignId('component_id_1')
+                ->constrained('products', 'product_id')
+                ->onDelete('cascade');
+
+            $table->foreignId('component_id_2')
+                ->constrained('products', 'product_id')
+                ->onDelete('cascade');
+
+            $table->boolean('is_compatible')->default(true);
+
+            $table->timestamps();
+    });
     }
 
     /**

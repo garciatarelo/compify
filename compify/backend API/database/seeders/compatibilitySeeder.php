@@ -15,16 +15,14 @@ class compatibilitySeeder extends Seeder
     {
         DB::table('compatibilities')->insert([
             [
-                'com_id' => 1,
-                'product_id_1' => 1,
-                'product_id_2' => 2,
-                'is_comparable' => 0,
+                'component_id_1' => 1,
+                'component_id_2' => 2,
+                'is_compatible' => true,
             ],
             [
-                'com_id' => 2,
-                'product_id_1' => 2,
-                'product_id_2' => 1,
-                'is_comparable' => 0,
+                'component_id_1' => 1,
+                'component_id_2' => 3,
+                'is_compatible' => false,
             ],
         ]);
     }

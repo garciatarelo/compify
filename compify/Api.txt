@@ -1,15 +1,43 @@
-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2xvZ2luIiwiaWF0IjoxNzYzMTAxNTUxLCJleHAiOjE3NjMxMDUxNTEsIm5iZiI6MTc2MzEwMTU1MSwianRpIjoic1ZXUzdpWGoyNEVNQmFBQSIsInN1YiI6IjEiLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.tgfSU2HgRsMKhWanasDuvZzzfIJuu0b2NY7K8SrMxCQ
+eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2xvZ2luIiwiaWF0IjoxNzYzMzU1NDU5LCJleHAiOjE3NjMzNTkwNTksIm5iZiI6MTc2MzM1NTQ1OSwianRpIjoiMnlyQk9sbWU3blkxa1pZMyIsInN1YiI6IjEiLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.8OZxeZAp-XsNLpa4TZLRYx5woSb7ey11I5brZ78tKUY
 
 POST DE PRODUCTOS
 {
-  "brand": "Marca1",
-  "model": "Modelo1",
-  "cpu": "cpu1",
-  "ram": "ram1",
-  "storage": "storage1",
-  "display": "display1",
-  "image_url": "youtube.com",
-  "description": "producto insertado correctamente",
+  "category_id": 1,
+  "brand": "ASUS",
+  "model": "ROG Strix G15",
+  "image_url": "https://example.com/images/asus_rog_strix_g15.jpg",
+  "description": "Gaming laptop con RGB y alta performance",
+  "base_price": 1299.99,
+  "specs": {
+    "cpu": "Intel Core i7-11800H",
+    "ram": "16GB DDR4 3200MHz",
+    "storage": "1TB NVMe SSD",
+    "graphics": "NVIDIA GeForce RTX 3060",
+    "display": "15.6\" FHD 144Hz",
+    "keyboard": "RGB Backlit Chiclet",
+    "wifi": "Wi-Fi 6",
+    "ports": "3x USB 3.2, 1x HDMI, 1x Ethernet",
+    "weight": "2.3kg"
+  }
+}
+
+{
+  "category_id": 2,
+  "brand": "NVIDIA",
+  "model": "GeForce RTX 4070 Ti",
+  "image_url": "https://example.com/images/rtx_4070_ti.jpg",
+  "description": "Tarjeta gráfica gaming de última generación",
+  "base_price": 799.99,
+  "specs": {
+    "gpu": "Ada Lovelace Architecture",
+    "cuda_cores": 7680,
+    "memory": "12GB GDDR6X",
+    "memory_interface": "192-bit",
+    "boost_clock": "2.61 GHz",
+    "power_consumption": "285W",
+    "recommended_psu": "750W",
+    "outputs": "3x DisplayPort 1.4a, 1x HDMI 2.1"
+  }
 }
 
 PATCH DE PRODUCTOS
@@ -90,16 +118,20 @@ PATCH DE COMPABILITY
   "is_comparable":"0"
 }
 
-POST DE BUILD DETAILS
+POST DE BUILD ITEMS
 {
-  "build_id":"1",
-  "product_id":"2"
+    "build_id": 1,
+    "product_id": 2,
+    "quantity": 2,
+    "price_at_purchase": 499.99
 }
 
-PATCH DE BUILD DETAILS
+PATCH DE BUILD ITEMS
 {
-  "build_id":"1",
-  "product_id":"1"
+    "build_id": 1,
+    "product_id": 2,
+    "quantity": 2,
+    "price_at_purchase": 599.99
 }
 
 POST DE FAVORITES

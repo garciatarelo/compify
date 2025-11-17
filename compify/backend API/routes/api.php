@@ -7,7 +7,7 @@ use App\Http\Controllers\CategoriesController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\StoresController;
 use App\Http\Controllers\PricesController;
-use App\Http\Controllers\BuildDetailsController;
+use App\Http\Controllers\PcBuildItemsController;
 use App\Http\Controllers\PcBuildsController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\CompatibilitiesController;
@@ -66,17 +66,10 @@ Route::middleware('jwt')->group(function () {
 
     Route::apiResource('prices', PricesController::class);
 
-    Route::apiResource('build_details', BuildDetailsController::class);
+    Route::apiResource('build_items', PcBuildItemsController::class);
 
     Route::apiResource('pc_builds', PcBuildsController::class);
 
     Route::apiResource('users', UsersController::class);
-
-    Route::apiResource('compatibilities', CompatibilitiesController::class);
-
-    Route::apiResource('histories', HistoriesController::class);
-
-    Route::apiResource('favorites', FavoritesController::class);
-
     
 });

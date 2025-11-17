@@ -13,9 +13,17 @@ return new class extends Migration
     {
         Schema::create('histories', function (Blueprint $table) {
             $table->id('history_id');
-            $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
-            $table->foreignId('price_id')->constrained('prices', 'price_id')->onDelete('cascade');
-        });
+
+            $table->foreignId('user_id')
+                ->constrained('users', 'user_id')
+                ->onDelete('cascade');
+
+            $table->foreignId('price_id')
+                ->constrained('prices', 'price_id')
+                ->onDelete('cascade');
+
+            $table->timestamps();
+    }); 
     }
 
     /**

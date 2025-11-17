@@ -49,7 +49,7 @@ class DatabaseSeeder extends Seeder
             productSeeder::class,
             priceSeeder::class,
             pc_buildSeeder::class,
-            build_detailSeeder::class,
+            pc_build_itemSeeder::class,
             favoriteSeeder::class,
             historySeeder::class,
             compatibilitySeeder::class,
