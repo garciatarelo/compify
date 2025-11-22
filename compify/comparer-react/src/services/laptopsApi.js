@@ -75,19 +75,21 @@ export const transformLaptopsToFrontendFormat = (apiLaptops) => {
       brand: laptop.brand,
       name: `${laptop.brand} ${laptop.model}`, // Combinar marca y modelo para el nombre
       model: laptop.model,
-      processor: laptop.cpu, // ProductCard espera "processor"
+      processor: laptop.cpu || 'N/A', // ProductCard espera "processor"
       cpu: laptop.cpu,
-      ram: ramGB, // ProductCard espera un número
+      ram: laptop.ram || `${ramGB}GB`, // ProductCard espera un string o número, preferimos el string original
       ramFull: laptop.ram, // Mantener el string completo por si acaso
-      storage: laptop.storage,
+      storage: laptop.storage || 'N/A',
       graphics: laptop.gpu || 'Integrada', // ProductCard espera "graphics"
-      display: laptop.display,
+      display: laptop.display || 'N/A',
       imageUrl: laptop.image_url || 'https://placehold.co/400x300/6366f1/white?text=Laptop', // ProductCard espera "imageUrl"
       description: laptop.description,
+      os: laptop.os || 'N/A',
+      specs: laptop.specs || {},
       
       // Precios de tiendas (formato compatible con ProductCard)
       stores: laptop.prices?.map(price => ({
-        name: price.store_name,
+        name: price.store_name || 'Tienda', // Fallback si store_name es null
         price: parseFloat(price.price),
         url: price.url,
         logo: price.logo_url || '🏪',
@@ -95,8 +97,8 @@ export const transformLaptopsToFrontendFormat = (apiLaptops) => {
       })) || [],
       
       // Precios agregados
-      minPrice: laptop.min_price || 0,
-      maxPrice: laptop.max_price || 0,
+      minPrice: parseFloat(laptop.min_price) || 0,
+      maxPrice: parseFloat(laptop.max_price) || 0,
       avgPrice: laptop.prices?.length > 0 
         ? laptop.prices.reduce((sum, p) => sum + parseFloat(p.price), 0) / laptop.prices.length 
         : 0,

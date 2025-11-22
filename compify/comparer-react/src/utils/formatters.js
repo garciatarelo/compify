@@ -6,7 +6,7 @@
  * @returns {string} 
  */
 export function formatPrice(price) {
-  return `S/ ${price.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$/ ${price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /**

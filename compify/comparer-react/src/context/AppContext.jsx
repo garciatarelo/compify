@@ -35,7 +35,7 @@ export const AppProvider = ({ children }) => {
     search: '',
     brand: '',
     minPrice: 0,
-    maxPrice: 10000,
+    maxPrice: 100000,
     processor: '',
     graphics: ''
   });
@@ -117,7 +117,7 @@ export const AppProvider = ({ children }) => {
       search: '',
       brand: '',
       minPrice: 0,
-      maxPrice: 10000,
+      maxPrice: 100000,
       processor: '',
       graphics: ''
     });

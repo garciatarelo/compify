@@ -22,7 +22,8 @@ function Home() {
     try {
       setLoading(true);
       setError(null);
-      const result = await getLaptopsFormatted();
+      // Solicitamos más productos por página (ej. 100) para ver todos los resultados del scraping
+      const result = await getLaptopsFormatted({ per_page: 100 });
       const laptops = result.laptops || result;
       setAllProducts(laptops);
       setFilteredProducts(laptops);
@@ -52,9 +53,9 @@ function Home() {
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       result = result.filter(p =>
-        p.model?.toLowerCase().includes(searchLower) ||
-        p.brand?.toLowerCase().includes(searchLower) ||
-        p.cpu?.toLowerCase().includes(searchLower)
+        (p.model && p.model.toLowerCase().includes(searchLower)) ||
+        (p.brand && p.brand.toLowerCase().includes(searchLower)) ||
+        (p.cpu && p.cpu.toLowerCase().includes(searchLower))
       );
     }
 
@@ -66,11 +67,20 @@ function Home() {
     // Filtro de precio
     result = result.filter(p => {
       const minPrice = p.minPrice || 0;
+      // Si maxPrice es 0 o muy bajo, asumimos que no se ha movido el slider superior o es infinito
+      // Pero aquí filters.maxPrice viene del contexto.
       return minPrice >= filters.minPrice && minPrice <= filters.maxPrice;
     });
 
     setFilteredProducts(result);
   };
+
+  // Efecto para filtrado en tiempo real
+  useEffect(() => {
+    if (allProducts.length > 0) {
+      applyFilters();
+    }
+  }, [filters, allProducts]);
 
   const handleSearchChange = (e) => {
     updateFilters({ search: e.target.value });
@@ -159,16 +169,10 @@ function Home() {
                 {/* Actions */}
                 <div className="flex items-end gap-2">
                   <button
-                    onClick={applyFilters}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition-colors"
-                  >
-                    Filtrar
-                  </button>
-                  <button
                     onClick={handleReset}
-                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors"
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors w-full"
                   >
-                    Limpiar
+                    Limpiar Filtros
                   </button>
                 </div>
               </div>

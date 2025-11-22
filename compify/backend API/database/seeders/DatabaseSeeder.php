@@ -53,6 +53,7 @@ class DatabaseSeeder extends Seeder
             favoriteSeeder::class,
             historySeeder::class,
             compatibilitySeeder::class,
+            LaptopsSeeder::class,
         ]);
     }
 }

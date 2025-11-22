@@ -19,10 +19,12 @@ class Product extends Model
         'image_url',
         'description',
         'specs',
-        'base_price'
-    ];
-
-    protected $hidden = [
+        'base_price',
+        // Campos específicos que el usuario quiere llenar
+        'ram_type',
+        'capacity',
+        'storage_type',
+        'storage_capacity',
         'component_type',
         'socket',
         'tdp',
@@ -30,17 +32,16 @@ class Product extends Model
         'threads',
         'base_clock',
         'turbo_clock',
-        'ram_type',
         'max_ram',
         'ram_slots',
         'memory_type',
-        'capacity',
         'speed',
         'vram',
         'wattage',
         'efficiency',
-        'storage_type',
-        'storage_capacity',
+    ];
+
+    protected $hidden = [
         'created_at',
         'updated_at',
     ];
@@ -53,5 +54,10 @@ class Product extends Model
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_id', 'category_id');
+    }
+
+    public function prices()
+    {
+        return $this->hasMany(Price::class, 'product_id', 'product_id');
     }
 }

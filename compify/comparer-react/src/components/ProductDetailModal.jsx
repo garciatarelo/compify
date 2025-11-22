@@ -43,7 +43,9 @@ function ProductDetailModal({ isOpen, onClose, product }) {
   };
 
   // Calcular precio mínimo y máximo actuales
-  const prices = product.stores.map(s => s.price);
+  const prices = product.stores && product.stores.length > 0 
+    ? product.stores.map(s => s.price) 
+    : [0];
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
   
@@ -88,18 +90,38 @@ function ProductDetailModal({ isOpen, onClose, product }) {
             </h2>
             
             {/* Specs */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="flex items-center">
-                <span className="font-semibold text-gray-600 w-28">Procesador:</span>
-                <span className="text-gray-800">{product.processor}</span>
+            <div className="grid grid-cols-2 gap-y-4 gap-x-6 mb-6 text-sm">
+              <div className="flex flex-col border-b pb-2">
+                <span className="font-semibold text-gray-600">Procesador:</span>
+                <span className="text-gray-800">{product.cpu || product.processor || 'N/A'}</span>
               </div>
-              <div className="flex items-center">
-                <span className="font-semibold text-gray-600 w-28">RAM:</span>
-                <span className="text-gray-800">{product.ram}GB</span>
+              <div className="flex flex-col border-b pb-2">
+                <span className="font-semibold text-gray-600">Tarjeta de Video:</span>
+                <span className="text-gray-800">{product.gpu || product.graphics || 'N/A'}</span>
               </div>
-              <div className="flex items-center col-span-2">
-                <span className="font-semibold text-gray-600 w-28">Gráficos:</span>
-                <span className="text-gray-800">{product.graphics}</span>
+              <div className="flex flex-col border-b pb-2">
+                <span className="font-semibold text-gray-600">Memoria RAM:</span>
+                <span className="text-gray-800">{product.ram || 'N/A'}</span>
+              </div>
+              <div className="flex flex-col border-b pb-2">
+                <span className="font-semibold text-gray-600">Almacenamiento:</span>
+                <span className="text-gray-800">{product.storage || 'N/A'}</span>
+              </div>
+              <div className="flex flex-col border-b pb-2">
+                <span className="font-semibold text-gray-600">Pantalla:</span>
+                <span className="text-gray-800">{product.display || 'N/A'}</span>
+              </div>
+              <div className="flex flex-col border-b pb-2">
+                <span className="font-semibold text-gray-600">Resolución:</span>
+                <span className="text-gray-800">{product.display_res || 'N/A'}</span>
+              </div>
+              <div className="flex flex-col border-b pb-2">
+                <span className="font-semibold text-gray-600">Táctil:</span>
+                <span className="text-gray-800">{product.touch || 'No'}</span>
+              </div>
+              <div className="flex flex-col border-b pb-2">
+                <span className="font-semibold text-gray-600">Sistema Operativo:</span>
+                <span className="text-gray-800">{product.os || 'N/A'}</span>
               </div>
             </div>
             
@@ -163,77 +185,83 @@ function ProductDetailModal({ isOpen, onClose, product }) {
       {/* Stores Comparison */}
       <div>
         <h3 className="text-xl font-bold text-gray-800 mb-4">
-          🏪 Comparación de Tiendas ({product.stores.length} disponibles)
+          🏪 Comparación de Tiendas ({product.stores ? product.stores.length : 0} disponibles)
         </h3>
         <div className="space-y-3">
-          {product.stores
-            .sort((a, b) => a.price - b.price)
-            .map((store, index) => {
-              const isCheapest = index === 0;
-              const priceDiff = store.price - minPrice;
-              
-              return (
-                <div
-                  key={store.name}
-                  className={`border-2 rounded-lg p-4 transition-all ${
-                    isCheapest
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-200 bg-white hover:border-blue-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    {/* Store Info */}
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className="text-4xl">{store.logo}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-gray-800 text-lg">
-                            {store.name}
-                          </h4>
-                          {isCheapest && (
-                            <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
-                              MEJOR PRECIO
-                            </span>
+          {product.stores && product.stores.length > 0 ? (
+            product.stores
+              .sort((a, b) => a.price - b.price)
+              .map((store, index) => {
+                const isCheapest = index === 0;
+                const priceDiff = store.price - minPrice;
+                
+                return (
+                  <div
+                    key={index}
+                    className={`border-2 rounded-lg p-4 transition-all ${
+                      isCheapest
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 bg-white hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      {/* Store Info */}
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className="text-4xl">{store.logo || '🏪'}</div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-gray-800 text-lg">
+                              {store.name}
+                            </h4>
+                            {isCheapest && (
+                              <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+                                MEJOR PRECIO
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            Envío: {store.shipping}
+                          </div>
+                          {priceDiff > 0 && (
+                            <div className="text-sm text-amber-600 mt-1">
+                              +{formatPrice(priceDiff)} más caro
+                            </div>
                           )}
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          Envío: {store.shipping}
-                        </div>
-                        {priceDiff > 0 && (
-                          <div className="text-sm text-amber-600 mt-1">
-                            +{formatPrice(priceDiff)} más caro
-                          </div>
-                        )}
                       </div>
-                    </div>
 
-                    {/* Price & Action */}
-                    <div className="text-right flex items-center gap-4">
-                      <div>
-                        <div className={`text-2xl font-bold ${
-                          isCheapest ? 'text-green-600' : 'text-gray-800'
-                        }`}>
-                          {formatPrice(store.price)}
+                      {/* Price & Action */}
+                      <div className="text-right flex items-center gap-4">
+                        <div>
+                          <div className={`text-2xl font-bold ${
+                            isCheapest ? 'text-green-600' : 'text-gray-800'
+                          }`}>
+                            {formatPrice(store.price)}
+                          </div>
                         </div>
+                        <a
+                          href={store.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`inline-flex items-center space-x-2 py-2 px-4 rounded-lg font-semibold transition-colors ${
+                            isCheapest
+                              ? 'bg-green-600 hover:bg-green-700 text-white'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          <ExternalLink size={18} />
+                          <span>Comprar</span>
+                        </a>
                       </div>
-                      <a
-                        href={store.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`inline-flex items-center space-x-2 py-2 px-4 rounded-lg font-semibold transition-colors ${
-                          isCheapest
-                            ? 'bg-green-600 hover:bg-green-700 text-white'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        }`}
-                      >
-                        <ExternalLink size={18} />
-                        <span>Comprar</span>
-                      </a>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              No hay información de tiendas disponible.
+            </div>
+          )}
         </div>
       </div>
 
