@@ -233,78 +233,118 @@ class LaptopController extends Controller
             $laptopCategory = Category::where('category_name', 'Laptops')->first();
             $categoryId = $laptopCategory ? $laptopCategory->category_id : 1;
 
-            // Fetch Product Groups that contain products in the 'Laptops' category
-            $query = ProductGroup::whereHas('products', function($q) use ($categoryId) {
-                $q->where('category_id', $categoryId);
-            })
-            ->with(['products' => function($q) use ($categoryId) {
-                $q->where('category_id', $categoryId)->with('prices.store');
-            }]);
+            // Fetch ALL products to perform grouping in memory
+            // We need to fetch all to correctly group items that might be on different "pages" if we paginated DB query
+            $products = Product::where('category_id', $categoryId)
+                ->with(['prices.store'])
+                ->get();
 
-            // Search logic
-            if ($request->has('q')) {
-                $searchTerm = $request->q;
-                $query->where(function($q) use ($searchTerm) {
-                    $q->where('name', 'like', '%' . $searchTerm . '%')
-                      ->orWhereHas('products', function($subQ) use ($searchTerm) {
-                          $subQ->where('brand', 'like', '%' . $searchTerm . '%')
-                               ->orWhere('model', 'like', '%' . $searchTerm . '%');
-                      });
-                });
-            }
+            // Grouping Logic
+            $groups = [];
             
-            // Pagination
-            $perPage = $request->get('per_page', 20);
-            $groups = $query->paginate($perPage);
-
-            // Transform
-            $groups->getCollection()->transform(function ($group) {
-                $allPrices = collect();
-                $products = [];
-                foreach ($group->products as $product) {
-                    $productPrices = [];
-                    foreach ($product->prices as $price) {
-                        $allPrices->push([
-                            'store_name' => $price->store->name_store ?? 'Unknown',
-                            'price' => $price->price,
-                            'url' => $price->product_url,
-                            'logo_url' => '',
-                            'specs' => $product->specs
-                        ]);
-                        $productPrices[] = [
-                            'store_name' => $price->store->name_store ?? 'Unknown',
-                            'price' => $price->price,
-                            'url' => $price->product_url,
-                            'logo_url' => ''
-                        ];
+            foreach ($products as $product) {
+                // Determine Group Key
+                if ($product->product_group_id) {
+                    $key = 'ID_' . $product->product_group_id;
+                } else {
+                    // Normalize for grouping
+                    $brand = trim(strtolower($product->brand));
+                    $model = trim(strtolower($product->model));
+                    
+                    // Prevent grouping of generic models
+                    $genericTerms = ['n/a', 'generico', 'generic', 'null', 'undefined', ''];
+                    if (in_array($model, $genericTerms) || strlen($model) < 2) {
+                        // Use unique ID to prevent grouping
+                        $key = 'UNIQUE_' . $product->product_id;
+                    } else {
+                        // Create a key based on Brand and Model to group identical products from different stores
+                        $key = $brand . '_' . $model;
                     }
-                    $products[] = [
-                        'product_id' => $product->product_id,
+                }
+
+                if (!isset($groups[$key])) {
+                    $groups[$key] = [
+                        'group_id' => $product->product_group_id,
                         'brand' => $product->brand,
                         'model' => $product->model,
-                        'specs' => $product->specs,
+                        'name' => $product->brand . ' ' . $product->model,
                         'image_url' => $product->image_url,
-                        'prices' => $productPrices,
-                        'min_price' => collect($productPrices)->min('price') ?? 0,
-                        'max_price' => collect($productPrices)->max('price') ?? 0,
+                        'specs' => $product->specs,
+                        'all_prices' => [],
+                        'representative_product' => $product // Keep one product as base
                     ];
                 }
+
+                // Collect prices from this product variant
+                foreach ($product->prices as $price) {
+                    $groups[$key]['all_prices'][] = [
+                        'store_name' => $price->store->name_store ?? 'Unknown',
+                        'price' => $price->price,
+                        'url' => $price->product_url,
+                        'logo_url' => '' // Logic for logo can be added here
+                    ];
+                }
+            }
+
+            // Transform groups into the format expected by frontend
+            $finalGroups = collect($groups)->map(function($group) {
+                $prices = collect($group['all_prices']);
+                $uniqueStores = $prices->unique('store_name')->count();
+                
+                // Create a single "merged" product for the frontend to display as one card
+                $mergedProduct = [
+                    'product_id' => $group['representative_product']->product_id,
+                    'brand' => $group['brand'],
+                    'model' => $group['model'],
+                    'specs' => $group['specs'],
+                    'image_url' => $group['image_url'],
+                    'prices' => $group['all_prices'],
+                    'min_price' => $prices->min('price') ?? 0,
+                    'max_price' => $prices->max('price') ?? 0,
+                    'cpu' => $group['specs']['cpu'] ?? $group['specs']['processor'] ?? null,
+                    'ram' => $group['specs']['ram'] ?? null,
+                    'storage' => $group['specs']['storage'] ?? null,
+                    'display' => $group['specs']['display'] ?? null,
+                    'gpu' => $group['specs']['gpu'] ?? null,
+                ];
+
                 return [
-                    'group_id' => $group->id,
-                    'name' => $group->name,
-                    'image_url' => $group->image_url ?? ($products[0]['image_url'] ?? null),
-                    'products' => $products,
-                    'prices' => $allPrices,
-                    'min_price' => $allPrices->min('price') ?? 0,
-                    'max_price' => $allPrices->max('price') ?? 0,
+                    'group_id' => $group['group_id'],
+                    'name' => $group['name'],
+                    'image_url' => $group['image_url'],
+                    'products' => [$mergedProduct], // Single merged product
+                    'prices' => $group['all_prices'],
+                    'min_price' => $prices->min('price') ?? 0,
+                    'max_price' => $prices->max('price') ?? 0,
+                    'store_count' => $uniqueStores
                 ];
             });
 
-            // Filter out nulls if any empty groups slipped through
-            $cleanedCollection = $groups->getCollection()->filter();
-            $groups->setCollection($cleanedCollection);
+            // Sort by store_count DESC (Most stores first)
+            $sortedGroups = $finalGroups->sortByDesc('store_count')->values();
 
-            return response()->json($groups, 200);
+            // Search logic (Applied after grouping to filter groups)
+            if ($request->has('q')) {
+                $searchTerm = strtolower($request->q);
+                $sortedGroups = $sortedGroups->filter(function($group) use ($searchTerm) {
+                    return str_contains(strtolower($group['name']), $searchTerm) || 
+                           str_contains(strtolower($group['brand']), $searchTerm);
+                })->values();
+            }
+
+            // Manual Pagination
+            $page = $request->get('page', 1);
+            $perPage = $request->get('per_page', 20);
+            
+            $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+                $sortedGroups->forPage($page, $perPage)->values(),
+                $sortedGroups->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+
+            return response()->json($paginated, 200);
 
         } catch (\Exception $e) {
             return response()->json([

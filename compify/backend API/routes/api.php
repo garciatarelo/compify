@@ -89,4 +89,5 @@ Route::prefix('dashboard')->group(function () {
     Route::get('/groups', [App\Http\Controllers\Api\DashboardController::class, 'listGroups']);
     Route::post('/groups/{id}/add', [App\Http\Controllers\Api\DashboardController::class, 'addToGroup']);
     Route::post('/groups/{id}/remove', [App\Http\Controllers\Api\DashboardController::class, 'removeFromGroup']);
+    Route::delete('/products/{id}', [App\Http\Controllers\Api\DashboardController::class, 'destroy']);
 });

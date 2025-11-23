@@ -9,7 +9,7 @@ import { formatPrice } from '../utils/formatters';
 import * as LucideIcons from 'lucide-react';
 
 // API URL
-const API_URL = 'http://localhost:8000/api/builder/components';
+const API_URL = `${import.meta.env.VITE_API_URL}/builder/components`;
 
 function Builder() {
   const { currentBuild, compatibilityIssues, clearBuild, getSelectedComponent, setComponentsData, componentsData } = useBuilder();

@@ -108,11 +108,6 @@ function Login() {
           </button>
         </form>
 
-        {/* Demo Info */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
-          <p className="font-semibold mb-1">💡 Demo Mode</p>
-          <p>Ingresa cualquier usuario y contraseña para acceder</p>
-        </div>
 
         {/* Register Link */}
         <div className="mt-8 text-center">

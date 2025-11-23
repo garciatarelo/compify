@@ -95,10 +95,11 @@ export const AppProvider = ({ children }) => {
   const login = async (username, password) => {
     if (!username || !password) return false;
     try {
-      const response = await fetch('http://localhost:8000/api/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           email: `${username}@example.com`, // El backend espera 'email'

@@ -38,6 +38,8 @@ const Dashboard = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [productType, setProductType] = useState('laptops'); // 'laptops' or 'components'
 
+  const [selectedGroupToAdd, setSelectedGroupToAdd] = useState('');
+
   // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -55,13 +57,13 @@ const Dashboard = () => {
     setLoading(true);
     try {
       // Fetch unmatched products with search param
-      const prodRes = await fetch(`http://localhost:8000/api/dashboard/products?unmatched=true&page=${pageNo}&search=${search}&type=${type}`);
+      const prodRes = await fetch(`${import.meta.env.VITE_API_URL}/dashboard/products?unmatched=true&page=${pageNo}&search=${search}&type=${type}`);
       const prodData = await prodRes.json();
       setProducts(prodData.data || []);
       setTotalPages(prodData.last_page || 1);
 
       // Fetch groups (only on first load or separate effect, but fine here for now)
-      const groupRes = await fetch('http://localhost:8000/api/dashboard/groups');
+      const groupRes = await fetch(`${import.meta.env.VITE_API_URL}/dashboard/groups?type=${type}`);
       const groupData = await groupRes.json();
       setGroups(groupData.data || []);
     } catch (error) {
@@ -82,29 +84,70 @@ const Dashboard = () => {
   const createGroup = async () => {
     if (selectedProducts.length === 0) return;
     try {
-      const res = await fetch('http://localhost:8000/api/dashboard/groups', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/dashboard/groups`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product_ids: selectedProducts })
       });
       if (res.ok) {
         setSelectedProducts([]);
-        fetchData(page, debouncedSearchTerm);
+        fetchData(page, debouncedSearchTerm, productType);
       }
     } catch (error) {
       console.error('Error creating group:', error);
     }
   };
 
+  const addToExistingGroup = async () => {
+    if (selectedProducts.length === 0 || !selectedGroupToAdd) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/dashboard/groups/${selectedGroupToAdd}/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_ids: selectedProducts })
+      });
+      if (res.ok) {
+        setSelectedProducts([]);
+        setSelectedGroupToAdd('');
+        fetchData(page, debouncedSearchTerm, productType);
+        alert('Productos añadidos al grupo correctamente');
+      } else {
+        alert('Error al añadir productos al grupo');
+      }
+    } catch (error) {
+      console.error('Error adding to group:', error);
+    }
+  };
+
+  const deleteProduct = async (id) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/dashboard/products/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        // Remove from local state
+        setProducts(products.filter(p => p.product_id !== id));
+        setSelectedProducts(selectedProducts.filter(pid => pid !== id));
+      } else {
+        alert('Error al eliminar el producto');
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
+  };
+
   const ungroup = async (groupId, productIds) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/dashboard/groups/${groupId}/remove`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/dashboard/groups/${groupId}/remove`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product_ids: productIds })
       });
       if (res.ok) {
-        fetchData(page, debouncedSearchTerm);
+        fetchData(page, debouncedSearchTerm, productType);
       }
     } catch (error) {
       console.error('Error ungrouping:', error);
@@ -160,13 +203,38 @@ const Dashboard = () => {
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
-          <button 
-            onClick={createGroup}
-            disabled={selectedProducts.length === 0}
-            className="bg-blue-500 text-white px-4 py-2 rounded mb-2 disabled:bg-gray-300"
-          >
-            Crear Grupo ({selectedProducts.length})
-          </button>
+          <div className="flex flex-wrap gap-2 mb-2">
+            <button 
+              onClick={createGroup}
+              disabled={selectedProducts.length === 0}
+              className="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-300"
+            >
+              Crear Nuevo Grupo ({selectedProducts.length})
+            </button>
+
+            <div className="flex gap-2 items-center">
+              <select 
+                className="border rounded p-2"
+                value={selectedGroupToAdd}
+                onChange={(e) => setSelectedGroupToAdd(e.target.value)}
+                disabled={selectedProducts.length === 0}
+              >
+                <option value="">-- Añadir a Grupo Existente --</option>
+                {groups.map(g => (
+                  <option key={g.id} value={g.id}>
+                    {g.name} (ID: {g.id})
+                  </option>
+                ))}
+              </select>
+              <button 
+                onClick={addToExistingGroup}
+                disabled={selectedProducts.length === 0 || !selectedGroupToAdd}
+                className="bg-green-600 text-white px-4 py-2 rounded disabled:bg-gray-300"
+              >
+                Añadir
+              </button>
+            </div>
+          </div>
           
           <div className="h-96 overflow-y-auto">
             {loading ? <p>Cargando...</p> : (
@@ -179,6 +247,7 @@ const Dashboard = () => {
                     <th>Modelo</th>
                     <th>Precio</th>
                     <th>Link</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -225,6 +294,15 @@ const Dashboard = () => {
                                 Ver
                               </a>
                             )}
+                          </td>
+                          <td className="p-2">
+                            <button 
+                              onClick={() => deleteProduct(product.product_id)}
+                              className="text-red-600 hover:text-red-800 px-2 py-1"
+                              title="Eliminar producto"
+                            >
+                              🗑️
+                            </button>
                           </td>
                         </tr>
                       ))}

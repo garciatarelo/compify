@@ -126,9 +126,45 @@ class DashboardController extends Controller
     }
     
     // List groups
-    public function listGroups()
+    public function listGroups(Request $request)
     {
-        $groups = ProductGroup::with('products.prices.store')->paginate(20);
+        $query = ProductGroup::with('products.prices.store');
+
+        if ($request->has('type')) {
+            $type = $request->type;
+            if ($type === 'laptops') {
+                $query->whereHas('products', function($q) {
+                    $q->whereNull('component_type');
+                });
+            } elseif ($type === 'components') {
+                $query->whereHas('products', function($q) {
+                    $q->whereNotNull('component_type');
+                });
+            }
+        }
+
+        $groups = $query->orderBy('created_at', 'desc')->paginate(20);
         return response()->json($groups);
+    }
+
+    // Delete a product
+    public function destroy($id)
+    {
+        try {
+            $product = Product::find($id);
+            if (!$product) {
+                return response()->json(['success' => false, 'message' => 'Product not found'], 404);
+            }
+
+            // Delete associated prices first (if cascade is not set in DB)
+            $product->prices()->delete();
+            
+            // Delete product
+            $product->delete();
+
+            return response()->json(['success' => true, 'message' => 'Product deleted successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
     }
 }

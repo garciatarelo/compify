@@ -27,10 +27,11 @@ function Register() {
 			return;
 		}
 		try {
-			const response = await fetch('http://localhost:8000/api/register', {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/register`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					'Accept': 'application/json'
 				},
 				body: JSON.stringify({
 					name: form.nombre,
@@ -50,7 +51,8 @@ function Register() {
 				setError(data.message || 'Error al registrar usuario');
 			}
 		} catch (err) {
-			setError('Error de conexión con el servidor');
+			console.error('Registration Error:', err);
+			setError('Error de conexión con el servidor: ' + (err.message || err));
 		}
 	};
 

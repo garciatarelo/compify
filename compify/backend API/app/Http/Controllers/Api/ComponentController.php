@@ -20,19 +20,6 @@ class ComponentController extends Controller
         $result = [];
 
         foreach ($types as $type) {
-            // Fetch products that are either grouped or individual
-            // We want to return "Groups" as single items if they exist, 
-            // and individual products if they are not in a group.
-            
-            // 1. Get Groups containing this component type
-            // Assuming a group takes the type of its products. 
-            // We need to be careful if a group has mixed types (shouldn't happen).
-            
-            // Strategy:
-            // Get all products of this type.
-            // If product has product_group_id, we use the Group.
-            // If not, we use the Product.
-            
             $products = Product::where('component_type', $type)
                 ->where('description', 'not like', 'PC %')
                 ->where('description', 'not like', '% PC %')
@@ -46,86 +33,93 @@ class ComponentController extends Controller
                 ->with(['prices.store', 'productGroup'])
                 ->get();
 
-            $processedGroups = []; // Track processed group IDs
-            $items = [];
+            // Grouping Logic (Memory based)
+            $groups = [];
 
             foreach ($products as $product) {
+                // Determine Group Key
                 if ($product->product_group_id) {
-                    if (in_array($product->product_group_id, $processedGroups)) {
-                        continue;
-                    }
-                    
-                    // Process Group
-                    $group = $product->productGroup;
-                    $groupProducts = $group->products()->with('prices.store')->get();
-                    
-                    $allStores = [];
-                    foreach ($groupProducts as $gp) {
-                        foreach ($gp->prices as $price) {
-                            $allStores[] = [
-                                'name' => $price->store->name_store,
-                                'price' => $price->price,
-                                'url' => $price->product_url,
-                                'logo' => $this->getStoreLogo($price->store->name_store),
-                                'shipping' => 'Consultar',
-                                'product_id' => $gp->product_id,
-                            ];
-                        }
-                    }
-                    
-                    // Sort stores by price
-                    usort($allStores, function($a, $b) {
-                        return $a['price'] <=> $b['price'];
-                    });
-
-                    $items[] = [
-                        'id' => 'group_' . $group->id, // Use group ID
-                        'name' => $group->name,
-                        'specs' => $this->formatSpecs($product), // Use specs from one product
-                        'socket' => $product->socket,
-                        'tdp' => $product->tdp,
-                        'type' => $product->component_type,
-                        'capacity' => $product->capacity,
-                        'memory_type' => $product->memory_type,
-                        'image' => $group->image_url ?? $product->image_url,
-                        'stores' => $allStores,
-                        'priceHistory' => [],
-                        'compatibleWith' => $this->getCompatibility($product),
-                        'is_group' => true
-                    ];
-                    
-                    $processedGroups[] = $product->product_group_id;
-                    
+                    $key = 'ID_' . $product->product_group_id;
                 } else {
-                    // Individual Product
-                    $stores = $product->prices->map(function ($price) use ($product) {
-                        return [
-                            'name' => $price->store->name_store,
-                            'price' => $price->price,
-                            'url' => $price->product_url,
-                            'logo' => $this->getStoreLogo($price->store->name_store),
-                            'shipping' => 'Consultar',
-                            'product_id' => $product->product_id,
-                        ];
-                    })->toArray();
+                    // Normalize for grouping
+                    $brand = trim(strtolower($product->brand));
+                    $model = trim(strtolower($product->model));
+                    
+                    // Prevent grouping of generic models
+                    $genericTerms = ['n/a', 'generico', 'generic', 'null', 'undefined', ''];
+                    if (in_array($model, $genericTerms) || strlen($model) < 2) {
+                        $key = 'UNIQUE_' . $product->product_id;
+                    } else {
+                        $key = $brand . '_' . $model;
+                    }
+                }
 
-                    $items[] = [
-                        'id' => $product->product_id,
-                        'name' => $product->brand . ' ' . $product->model,
+                if (!isset($groups[$key])) {
+                    $groups[$key] = [
+                        'id' => $product->product_group_id ? 'group_' . $product->product_group_id : $product->product_id,
+                        'name' => $product->product_group_id ? $product->productGroup->name : $product->brand . ' ' . $product->model,
                         'specs' => $this->formatSpecs($product),
                         'socket' => $product->socket,
                         'tdp' => $product->tdp,
                         'type' => $product->component_type,
                         'capacity' => $product->capacity,
                         'memory_type' => $product->memory_type,
-                        'image' => $product->image_url,
-                        'stores' => $stores,
-                        'priceHistory' => [],
+                        'image' => $product->product_group_id ? ($product->productGroup->image_url ?? $product->image_url) : $product->image_url,
                         'compatibleWith' => $this->getCompatibility($product),
-                        'is_group' => false
+                        'is_group' => (bool)$product->product_group_id,
+                        'all_prices' => [],
+                        'representative_product' => $product
+                    ];
+                }
+
+                // Collect prices
+                foreach ($product->prices as $price) {
+                    $groups[$key]['all_prices'][] = [
+                        'name' => $price->store->name_store ?? 'Unknown',
+                        'price' => $price->price,
+                        'url' => $price->product_url,
+                        'logo' => $this->getStoreLogo($price->store->name_store ?? ''),
+                        'shipping' => 'Consultar',
+                        'product_id' => $product->product_id,
                     ];
                 }
             }
+
+            // Transform to items list
+            $items = [];
+            foreach ($groups as $key => $group) {
+                $prices = $group['all_prices'];
+                
+                // Sort prices cheap to expensive
+                usort($prices, function($a, $b) {
+                    return $a['price'] <=> $b['price'];
+                });
+
+                // Count unique stores
+                $uniqueStores = collect($prices)->unique('name')->count();
+
+                $items[] = [
+                    'id' => $group['id'],
+                    'name' => $group['name'],
+                    'specs' => $group['specs'],
+                    'socket' => $group['socket'],
+                    'tdp' => $group['tdp'],
+                    'type' => $group['type'],
+                    'capacity' => $group['capacity'],
+                    'memory_type' => $group['memory_type'],
+                    'image' => $group['image'],
+                    'stores' => $prices,
+                    'priceHistory' => [],
+                    'compatibleWith' => $group['compatibleWith'],
+                    'is_group' => $group['is_group'] || count($prices) > 1,
+                    'store_count' => $uniqueStores
+                ];
+            }
+
+            // Sort items by store_count DESC
+            usort($items, function($a, $b) {
+                return $b['store_count'] <=> $a['store_count'];
+            });
 
             $result[$type] = [
                 'name' => $this->getCategoryName($type),
