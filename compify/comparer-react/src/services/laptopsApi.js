@@ -93,7 +93,8 @@ export const transformLaptopsToFrontendFormat = (apiLaptops) => {
         price: parseFloat(price.price),
         url: price.url,
         logo: price.logo_url || '🏪',
-        shipping: 'Consultar' // Valor por defecto
+        shipping: 'Consultar', // Valor por defecto
+        specs: price.specs || null // Incluir specs específicas de la tienda
       })) || [],
       
       // Precios agregados

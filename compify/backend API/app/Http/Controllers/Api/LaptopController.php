@@ -226,16 +226,27 @@ class LaptopController extends Controller
     public function index(Request $request)
     {
         try {
-            // Only fetch groups that have products
-            $query = ProductGroup::has('products')
-                ->with(['products.prices.store', 'products.category']);
+            // Get Laptop Category ID dynamically
+            $laptopCategory = Category::where('category_name', 'Laptops')->first();
+            $categoryId = $laptopCategory ? $laptopCategory->category_id : 1;
 
-            // Search logic needs to search within products
+            // Fetch Product Groups that contain products in the 'Laptops' category
+            $query = ProductGroup::whereHas('products', function($q) use ($categoryId) {
+                $q->where('category_id', $categoryId);
+            })
+            ->with(['products' => function($q) use ($categoryId) {
+                $q->where('category_id', $categoryId)->with('prices.store');
+            }]);
+
+            // Search logic
             if ($request->has('q')) {
                 $searchTerm = $request->q;
-                $query->whereHas('products', function($q) use ($searchTerm) {
-                    $q->where('brand', 'like', '%' . $searchTerm . '%')
-                      ->orWhere('model', 'like', '%' . $searchTerm . '%');
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('name', 'like', '%' . $searchTerm . '%')
+                      ->orWhereHas('products', function($subQ) use ($searchTerm) {
+                          $subQ->where('brand', 'like', '%' . $searchTerm . '%')
+                               ->orWhere('model', 'like', '%' . $searchTerm . '%');
+                      });
                 });
             }
             
@@ -249,13 +260,16 @@ class LaptopController extends Controller
                 $allPrices = collect();
                 $firstProduct = $group->products->first();
                 
+                if (!$firstProduct) return null; // Should not happen due to whereHas
+
                 foreach ($group->products as $product) {
                     foreach ($product->prices as $price) {
                         $allPrices->push([
                             'store_name' => $price->store->name_store ?? 'Unknown',
                             'price' => $price->price,
                             'url' => $price->product_url,
-                            'logo_url' => ''
+                            'logo_url' => '',
+                            'specs' => $product->specs
                         ]);
                     }
                 }
@@ -264,7 +278,6 @@ class LaptopController extends Controller
                     'group_id' => $group->id,
                     'name' => $group->name,
                     'image_url' => $group->image_url ?? $firstProduct->image_url,
-                    // Use specs from the first product as representative
                     'brand' => $firstProduct->brand,
                     'model' => $firstProduct->model,
                     'specs' => $firstProduct->specs,
@@ -273,6 +286,10 @@ class LaptopController extends Controller
                     'max_price' => $allPrices->max('price') ?? 0,
                 ];
             });
+
+            // Filter out nulls if any empty groups slipped through
+            $cleanedCollection = $groups->getCollection()->filter();
+            $groups->setCollection($cleanedCollection);
 
             return response()->json($groups, 200);
 

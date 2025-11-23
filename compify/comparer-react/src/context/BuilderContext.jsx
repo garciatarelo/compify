@@ -27,7 +27,8 @@ export const BuilderProvider = ({ children }) => {
       gpu: null,
       storage: null,
       psu: null,
-      case: null
+      case: null,
+      cooler: null
     };
   });
 
@@ -35,7 +36,10 @@ export const BuilderProvider = ({ children }) => {
   const [compatibilityIssues, setCompatibilityIssues] = useState([]);
 
   // Estado del total del build
-  const [buildTotal, setBuildTotal] = useState({ minTotal: 0, maxTotal: 0, selectedTotal: 0, componentCount: 0 });
+  const [buildTotal, setBuildTotal] = useState({ minTotal: 0, maxTotal: 0, selectedTotal: 0, avgTotal: 0, componentCount: 0 });
+
+  // Estado de los datos de componentes (cargados desde la API)
+  const [componentsData, setComponentsData] = useState({});
 
   // Guardar build en localStorage cuando cambie
   // TODO API: Aquí también se debe sincronizar con POST /api/builds/{id} para guardar en servidor
@@ -45,12 +49,16 @@ export const BuilderProvider = ({ children }) => {
     // Recalcular compatibilidad y total
     // TODO API: La validación de compatibilidad puede hacerse también en backend
     // con POST /api/builds/validate enviando el currentBuild
-    const issues = checkCompatibility(currentBuild);
-    setCompatibilityIssues(issues);
     
-    const total = calculateBuildTotal(currentBuild);
-    setBuildTotal(total);
-  }, [currentBuild]);
+    // Solo calcular si tenemos datos de componentes (o usar mock si está vacío, pero mejor esperar)
+    if (Object.keys(componentsData).length > 0) {
+        const issues = checkCompatibility(currentBuild, componentsData);
+        setCompatibilityIssues(issues);
+        
+        const total = calculateBuildTotal(currentBuild, componentsData);
+        setBuildTotal(total);
+    }
+  }, [currentBuild, componentsData]);
 
   // Agregar o actualizar un componente en el build
   const addComponent = (category, componentId, storeName = null, price = null, storeUrl = null) => {
@@ -84,6 +92,19 @@ export const BuilderProvider = ({ children }) => {
     }));
   };
 
+  // Actualizar múltiples tiendas a la vez (para aplicar combinaciones)
+  const updateBuildStores = (updates) => {
+    setCurrentBuild(prev => {
+      const newBuild = { ...prev };
+      Object.entries(updates).forEach(([category, data]) => {
+        newBuild[`${category}_store`] = data.store;
+        newBuild[`${category}_price`] = data.price;
+        if (data.url) newBuild[`${category}_url`] = data.url;
+      });
+      return newBuild;
+    });
+  };
+
   // Limpiar todo el build
   const clearBuild = () => {
     setCurrentBuild({
@@ -93,7 +114,8 @@ export const BuilderProvider = ({ children }) => {
       gpu: null,
       storage: null,
       psu: null,
-      case: null
+      case: null,
+      cooler: null
     });
   };
 
@@ -133,11 +155,14 @@ export const BuilderProvider = ({ children }) => {
     currentBuild,
     compatibilityIssues,
     buildTotal,
+    componentsData, // Expose data
     
     // Funciones de componentes
+    setComponentsData, // Expose setter
     addComponent,
     removeComponent,
     updateComponentStore,
+    updateBuildStores,
     clearBuild,
     
     // Funciones de consulta

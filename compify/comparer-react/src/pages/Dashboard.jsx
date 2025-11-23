@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatPrice } from '../utils/formatters';
 
 // Función helper para normalizar nombres y agrupar visualmente
 const normalizeName = (brand, model) => {
@@ -35,6 +36,7 @@ const Dashboard = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [productType, setProductType] = useState('laptops'); // 'laptops' or 'components'
 
   // Debounce search term
   useEffect(() => {
@@ -46,14 +48,14 @@ const Dashboard = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-    fetchData(page, debouncedSearchTerm);
-  }, [page, debouncedSearchTerm]);
+    fetchData(page, debouncedSearchTerm, productType);
+  }, [page, debouncedSearchTerm, productType]);
 
-  const fetchData = async (pageNo, search = '') => {
+  const fetchData = async (pageNo, search = '', type = 'laptops') => {
     setLoading(true);
     try {
       // Fetch unmatched products with search param
-      const prodRes = await fetch(`http://localhost:8000/api/dashboard/products?unmatched=true&page=${pageNo}&search=${search}`);
+      const prodRes = await fetch(`http://localhost:8000/api/dashboard/products?unmatched=true&page=${pageNo}&search=${search}&type=${type}`);
       const prodData = await prodRes.json();
       setProducts(prodData.data || []);
       setTotalPages(prodData.last_page || 1);
@@ -132,6 +134,21 @@ const Dashboard = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Dashboard de Emparejamiento</h1>
       
+      <div className="mb-4 flex gap-2">
+        <button 
+          onClick={() => setProductType('laptops')}
+          className={`px-4 py-2 rounded ${productType === 'laptops' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+        >
+          Laptops
+        </button>
+        <button 
+          onClick={() => setProductType('components')}
+          className={`px-4 py-2 rounded ${productType === 'components' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+        >
+          Componentes
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Unmatched Products */}
         <div className="bg-white p-4 rounded shadow">
@@ -196,7 +213,7 @@ const Dashboard = () => {
                           <td className="p-2">{product.prices[0]?.store?.name_store}</td>
                           <td className="p-2">{product.brand}</td>
                           <td className="p-2">{product.model}</td>
-                          <td className="p-2">${product.prices[0]?.price}</td>
+                          <td className="p-2">{formatPrice(product.prices[0]?.price)}</td>
                           <td className="p-2">
                             {product.prices[0]?.product_url && (
                               <a 

@@ -46,14 +46,6 @@ class DatabaseSeeder extends Seeder
         $this->call([
             categorySeeder::class,
             storeSeeder::class,
-            productSeeder::class,
-            priceSeeder::class,
-            pc_buildSeeder::class,
-            pc_build_itemSeeder::class,
-            favoriteSeeder::class,
-            historySeeder::class,
-            compatibilitySeeder::class,
-            LaptopsSeeder::class,
         ]);
     }
 }

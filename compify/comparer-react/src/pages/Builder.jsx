@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { useBuilder } from '../context/BuilderContext';
-import { mockComponents } from '../data/mockComponents';
 import ComponentModal from '../components/BuilderComponents/ComponentModalNew';
 import BuildSummary from '../components/BuilderComponents/BuildSummaryFixed';
 import CompatibilityAlert from '../components/BuilderComponents/CompatibilityAlert';
@@ -9,18 +8,44 @@ import PriceComparisonModal from '../components/BuilderComponents/PriceCompariso
 import { formatPrice } from '../utils/formatters';
 import * as LucideIcons from 'lucide-react';
 
-// TODO API: Este componente consumirá:
-// - GET /api/components para obtener todos los componentes por categoría
-// - GET /api/components/{id} para detalles de un componente específico
-// - La compatibilidad se validará con las reglas devueltas por la API
+// API URL
+const API_URL = 'http://localhost:8000/api/builder/components';
+
 function Builder() {
-  const { currentBuild, compatibilityIssues, clearBuild, getSelectedComponent } = useBuilder();
+  const { currentBuild, compatibilityIssues, clearBuild, getSelectedComponent, setComponentsData, componentsData } = useBuilder();
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showComparisonModal, setShowComparisonModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Convertir mockComponents a array con id
-  // TODO API: Reemplazar con datos de GET /api/components?category=all
-  const categories = Object.entries(mockComponents).map(([id, category]) => ({
+  useEffect(() => {
+    const fetchComponents = async () => {
+      try {
+        // If we already have data in context, don't fetch again (optional optimization)
+        if (Object.keys(componentsData).length > 0) {
+             setLoading(false);
+             return;
+        }
+
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error('Error fetching components');
+        }
+        const data = await response.json();
+        setComponentsData(data);
+      } catch (err) {
+        console.error("Failed to fetch components:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchComponents();
+  }, []); // Empty dependency array to run once on mount (or check componentsData)
+
+  // Convertir componentsData a array con id
+  const categories = Object.entries(componentsData).map(([id, category]) => ({
     ...category,
     id
   }));
@@ -42,12 +67,40 @@ function Builder() {
       'box': 'Box',
       'hard-drive': 'HardDrive',
       'zap': 'Zap',
-      'package': 'Package'
+      'package': 'Package',
+      'fan': 'Fan'
     };
     
     const IconComponent = LucideIcons[iconMap[iconName]];
     return IconComponent ? <IconComponent className="w-5 h-5 text-gray-600" /> : <span>📦</span>;
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando componentes...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center text-red-600">
+          <p>Error: {error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -64,7 +117,7 @@ function Builder() {
               {categories.map((category) => {
                 const selectedComponentId = currentBuild[category.id];
                 const selectedComponent = selectedComponentId 
-                  ? category.items.find(item => item.id === selectedComponentId) 
+                  ? category.items.find(item => item.id == selectedComponentId) 
                   : null;
 
                 const selectedStore = currentBuild[`${category.id}_store`];
@@ -167,7 +220,11 @@ function Builder() {
 
           {/* Columna de Resumen y Presupuesto */}
           <div className="lg:col-span-1">
-            <BuildSummary onClearBuild={clearBuild} onOpenComparison={() => setShowComparisonModal(true)} />
+            <BuildSummary 
+              componentsData={componentsData}
+              onClearBuild={clearBuild} 
+              onOpenComparison={() => setShowComparisonModal(true)} 
+            />
           </div>
         </div>
       </div>
@@ -178,7 +235,7 @@ function Builder() {
           isOpen={!!selectedCategory}
           onClose={closeModal}
           categoryKey={selectedCategory}
-          category={mockComponents[selectedCategory]}
+          category={componentsData[selectedCategory]}
         />
       )}
 

@@ -1,6 +1,19 @@
 // Utility functions for checking component compatibility
 
-import { mockComponents } from '../data/mockComponents';
+/**
+ * Helper para encontrar un componente por ID, buscando también dentro de grupos
+ */
+const findComponent = (items, id) => {
+  if (!items) return null;
+  // 1. Buscar coincidencia exacta (ID de producto o ID de grupo)
+  let component = items.find(i => i.id == id);
+  
+  // 2. Si no se encuentra, buscar si el ID pertenece a una tienda dentro de un grupo
+  if (!component) {
+    component = items.find(i => i.stores && i.stores.some(s => s.product_id == id));
+  }
+  return component;
+};
 
 /**
  * Verifica la compatibilidad entre componentes seleccionados
@@ -8,48 +21,56 @@ import { mockComponents } from '../data/mockComponents';
  * @param {Object} componentsData - Datos de componentes (mock o de la API)
  * @returns {Array} - Array de issues de compatibilidad
  */
-export function checkCompatibility(currentBuild, componentsData = mockComponents) {
+export function checkCompatibility(currentBuild, componentsData) {
   const issues = [];
 
   // Obtener componentes seleccionados
-  const cpu = currentBuild.cpu ? componentsData.cpu?.items?.find(i => i.id === currentBuild.cpu) : null;
-  const motherboard = currentBuild.motherboard ? componentsData.motherboard?.items?.find(i => i.id === currentBuild.motherboard) : null;
-  const ram = currentBuild.ram ? componentsData.ram?.items?.find(i => i.id === currentBuild.ram) : null;
-  const gpu = currentBuild.gpu ? componentsData.gpu?.items?.find(i => i.id === currentBuild.gpu) : null;
-  const psu = currentBuild.psu ? componentsData.psu?.items?.find(i => i.id === currentBuild.psu) : null;
+  const cpu = currentBuild.cpu ? findComponent(componentsData.cpu?.items, currentBuild.cpu) : null;
+  const motherboard = currentBuild.motherboard ? findComponent(componentsData.motherboard?.items, currentBuild.motherboard) : null;
+  const ram = currentBuild.ram ? findComponent(componentsData.ram?.items, currentBuild.ram) : null;
+  const gpu = currentBuild.gpu ? findComponent(componentsData.gpu?.items, currentBuild.gpu) : null;
+  const psu = currentBuild.psu ? findComponent(componentsData.psu?.items, currentBuild.psu) : null;
 
   // Verificar compatibilidad CPU - Motherboard
   if (cpu && motherboard) {
-    if (cpu.socket !== motherboard.socket) {
+    const cpuSocket = (cpu.socket || '').toUpperCase();
+    const mbSocket = (motherboard.socket || '').toUpperCase();
+
+    if (cpuSocket && mbSocket && cpuSocket !== mbSocket) {
       issues.push({
         level: 'critical',
         components: ['CPU', 'Placa Base'],
-        message: `❌ INCOMPATIBLE: <strong>${cpu.name}</strong> (socket ${cpu.socket.toUpperCase()}) NO es compatible con <strong>${motherboard.name}</strong> (socket ${motherboard.socket.toUpperCase()})`,
-        solution: `💡 Necesitas una placa base con socket ${cpu.socket.toUpperCase()}`
+        message: `❌ INCOMPATIBLE: <strong>${cpu.name}</strong> (socket ${cpuSocket}) NO es compatible con <strong>${motherboard.name}</strong> (socket ${mbSocket})`,
+        solution: `💡 Necesitas una placa base con socket ${cpuSocket}`
       });
     }
   } else if (cpu && !motherboard) {
+    const cpuSocket = (cpu.socket || 'DESCONOCIDO').toUpperCase();
     issues.push({
       level: 'info',
       components: ['Placa Base'],
-      message: `ℹ️ Selecciona una <strong>Placa Base compatible con socket ${cpu.socket.toUpperCase()}</strong> para tu procesador ${cpu.name}`
+      message: `ℹ️ Selecciona una <strong>Placa Base compatible con socket ${cpuSocket}</strong> para tu procesador ${cpu.name}`
     });
   } else if (motherboard && !cpu) {
+    const mbSocket = (motherboard.socket || 'DESCONOCIDO').toUpperCase();
     issues.push({
       level: 'info',
       components: ['CPU'],
-      message: `ℹ️ Selecciona un <strong>Procesador compatible con socket ${motherboard.socket.toUpperCase()}</strong> para tu placa base ${motherboard.name}`
+      message: `ℹ️ Selecciona un <strong>Procesador compatible con socket ${mbSocket}</strong> para tu placa base ${motherboard.name}`
     });
   }
 
   // Verificar compatibilidad RAM - Motherboard
   if (ram && motherboard) {
-    if (ram.type !== motherboard.ramType) {
+    const ramGen = (ram.memory_type || '').toUpperCase(); 
+    const mbRamGen = (motherboard.memory_type || '').toUpperCase();
+
+    if (ramGen && mbRamGen && ramGen !== mbRamGen) {
       issues.push({
         level: 'critical',
         components: ['RAM', 'Placa Base'],
-        message: `❌ INCOMPATIBLE: <strong>${ram.name}</strong> (tipo ${ram.type.toUpperCase()}) NO es compatible con <strong>${motherboard.name}</strong> (tipo ${motherboard.ramType.toUpperCase()})`,
-        solution: `💡 Necesitas memoria RAM tipo ${motherboard.ramType.toUpperCase()}`
+        message: `❌ INCOMPATIBLE: <strong>${ram.name}</strong> (tipo ${ramGen}) NO es compatible con <strong>${motherboard.name}</strong> (tipo ${mbRamGen})`,
+        solution: `💡 Necesitas memoria RAM tipo ${mbRamGen}`
       });
     }
     if (ram.capacity > motherboard.maxRam) {
@@ -61,10 +82,11 @@ export function checkCompatibility(currentBuild, componentsData = mockComponents
       });
     }
   } else if (ram && !motherboard) {
+    const ramGen = (ram.memory_type || 'DESCONOCIDO').toUpperCase();
     issues.push({
       level: 'info',
       components: ['Placa Base'],
-      message: `ℹ️ Selecciona una <strong>Placa Base compatible con ${ram.type.toUpperCase()}</strong> para tu memoria ${ram.name}`
+      message: `ℹ️ Selecciona una <strong>Placa Base compatible con ${ramGen}</strong> para tu memoria ${ram.name}`
     });
   }
 
@@ -108,9 +130,10 @@ export function checkCompatibility(currentBuild, componentsData = mockComponents
 /**
  * Calcula el precio total del build
  * @param {Object} currentBuild 
+ * @param {Object} componentsData
  * @returns {Object} 
  */
-export function calculateBuildTotal(currentBuild) {
+export function calculateBuildTotal(currentBuild, componentsData) {
   let minTotal = 0;
   let maxTotal = 0;
   let selectedTotal = 0;
@@ -121,20 +144,23 @@ export function calculateBuildTotal(currentBuild) {
     // Saltar las claves metadata (_store, _price)
     if (key.includes('_') || !componentId) return;
 
-    const category = mockComponents[key];
-    const component = category?.items.find(item => item.id === componentId);
+    const category = componentsData[key];
+    const component = findComponent(category?.items, componentId);
     
-    if (component && component.stores) {
-      const prices = component.stores.map(s => s.price);
-      minTotal += Math.min(...prices);
-      maxTotal += Math.max(...prices);
-      avgSum += prices.reduce((a, b) => a + b, 0) / prices.length;
+    if (component && component.stores && component.stores.length > 0) {
+      const prices = component.stores.map(s => Number(s.price)).filter(p => p !== null && !isNaN(p) && p > 0);
+      
+      if (prices.length > 0) {
+        minTotal += Math.min(...prices);
+        maxTotal += Math.max(...prices);
+        avgSum += prices.reduce((a, b) => a + b, 0) / prices.length;
 
-      // Usar precio seleccionado específico si existe, sino usar el mínimo
-      const selectedPrice = currentBuild[`${key}_price`];
-      selectedTotal += selectedPrice || Math.min(...prices);
+        // Usar precio seleccionado específico si existe, sino usar el mínimo
+        const selectedPrice = currentBuild[`${key}_price`];
+        selectedTotal += selectedPrice ? Number(selectedPrice) : Math.min(...prices);
 
-      componentCount++;
+        componentCount++;
+      }
     }
   });
 
@@ -150,9 +176,10 @@ export function calculateBuildTotal(currentBuild) {
 /**
  * Calcula las combinaciones de precios de todas las tiendas posibles
  * @param {Object} currentBuild 
+ * @param {Object} componentsData
  * @returns {Array} 
  */
-export function calculateStoreCombinations(currentBuild) {
+export function calculateStoreCombinations(currentBuild, componentsData) {
   const combinations = [];
   const storeNames = new Set();
   const storeLogos = {};
@@ -164,10 +191,9 @@ export function calculateStoreCombinations(currentBuild) {
 
     const componentId = currentBuild[key];
     if (componentId) {
-      const category = mockComponents[key];
-      if (!category || !category.items) return;
+      const category = componentsData[key];
+      const component = findComponent(category?.items, componentId);
       
-      const component = category.items.find(i => i.id === componentId);
       if (component && component.stores) {
         component.stores.forEach(store => {
           storeNames.add(store.name);
@@ -192,14 +218,13 @@ export function calculateStoreCombinations(currentBuild) {
     const selectedPrice = currentBuild[`${key}_price`];
 
     if (componentId) {
-      const category = mockComponents[key];
-      if (!category || !category.items) return;
+      const category = componentsData[key];
+      const component = findComponent(category?.items, componentId);
       
-      const component = category.items.find(i => i.id === componentId);
       if (component && component.stores) {
         if (selectedStore && selectedPrice) {
           hasSelectedStores = true;
-          selectedTotal += selectedPrice;
+          selectedTotal += Number(selectedPrice);
           if (!selectedStoreBreakdown[selectedStore]) {
             const storeInfo = component.stores.find(s => s.name === selectedStore);
             selectedStoreBreakdown[selectedStore] = {
@@ -208,10 +233,10 @@ export function calculateStoreCombinations(currentBuild) {
               total: 0
             };
           }
-          selectedStoreBreakdown[selectedStore].total += selectedPrice;
+          selectedStoreBreakdown[selectedStore].total += Number(selectedPrice);
         } else {
           // Si no hay tienda seleccionada, usar el precio mínimo
-          const minPrice = Math.min(...component.stores.map(s => s.price));
+          const minPrice = Math.min(...component.stores.map(s => Number(s.price)));
           selectedTotal += minPrice;
         }
       }
@@ -232,24 +257,26 @@ export function calculateStoreCombinations(currentBuild) {
   storeNames.forEach(storeName => {
     let total = 0;
     let missingComponents = 0;
+    const breakdown = {};
 
     Object.keys(currentBuild).forEach(key => {
       if (key.includes('_')) return;
 
       const componentId = currentBuild[key];
       if (componentId) {
-        const category = mockComponents[key];
-        if (!category || !category.items) return;
+        const category = componentsData[key];
+        const component = findComponent(category?.items, componentId);
         
-        const component = category.items.find(i => i.id === componentId);
         if (component && component.stores) {
           const storePrice = component.stores.find(s => s.name === storeName);
           if (storePrice) {
-            total += storePrice.price;
+            total += Number(storePrice.price);
+            breakdown[key] = { store: storeName, price: Number(storePrice.price), url: storePrice.url };
           } else {
             // Si esta tienda no tiene este componente, usar el precio más bajo disponible
-            const minPrice = Math.min(...component.stores.map(s => s.price));
-            total += minPrice;
+            const minStore = component.stores.reduce((min, s) => Number(s.price) < Number(min.price) ? s : min, component.stores[0]);
+            total += Number(minStore.price);
+            breakdown[key] = { store: minStore.name, price: Number(minStore.price), url: minStore.url };
             missingComponents++;
           }
         }
@@ -260,7 +287,8 @@ export function calculateStoreCombinations(currentBuild) {
       name: `${storeName}${missingComponents > 0 ? ' (mixto)' : ''}`,
       total: total,
       stores: [{ name: storeName, logo: storeLogos[storeName] || '🏪', total: total }],
-      isMixed: missingComponents > 0
+      isMixed: missingComponents > 0,
+      breakdown: breakdown
     });
   });
 

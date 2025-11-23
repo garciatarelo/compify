@@ -15,6 +15,7 @@ use App\Http\Controllers\HistoriesController;
 use App\Http\Controllers\FavoritesController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\LaptopController;
+use App\Http\Controllers\Api\ComponentController;
 
 // Ruta de prueba principal
 Route::get('/', function () {
@@ -55,6 +56,10 @@ Route::get('/laptops', [LaptopController::class, 'index']);
 Route::get('/laptops/search', [LaptopController::class, 'search']);
 Route::get('/laptops/{id}', [LaptopController::class, 'show']);
 Route::post('/laptops/bulk', [LaptopController::class, 'bulkStore']); // Para recibir del microservicio Python
+
+// Rutas para el Builder de PC
+Route::get('/builder/components', [ComponentController::class, 'index']);
+Route::post('/components/bulk', [ComponentController::class, 'bulkStore']);
 
 Route::middleware('jwt')->group(function () {
     //Endpoint protegidos con JWT

@@ -30,6 +30,17 @@ class DashboardController extends Controller
              });
         }
 
+        // Filter by type (laptops vs components)
+        if ($request->has('type')) {
+            if ($request->type === 'laptops') {
+                $query->whereNull('component_type');
+            } elseif ($request->type === 'components') {
+                $query->whereNotNull('component_type');
+            } elseif (in_array($request->type, ['cpu', 'gpu', 'ram', 'motherboard', 'storage', 'psu', 'case'])) {
+                $query->where('component_type', $request->type);
+            }
+        }
+
         // Filter by unmatched
         if ($request->has('unmatched') && $request->unmatched == 'true') {
             $query->whereNull('product_group_id');

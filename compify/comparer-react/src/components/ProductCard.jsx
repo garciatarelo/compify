@@ -51,30 +51,6 @@ function ProductCard({ product, onViewDetails }) {
           {product.name}
         </h3>
 
-        {/* Specs */}
-        <div className="space-y-1 mb-4 text-sm text-gray-600 flex-grow">
-          <div className="flex items-center">
-            <span className="font-semibold w-24">Procesador:</span>
-            <span className="truncate flex-1" title={product.cpu || product.processor}>{product.cpu || product.processor}</span>
-          </div>
-          <div className="flex items-center">
-            <span className="font-semibold w-24">RAM:</span>
-            <span>{product.ram}</span>
-          </div>
-          <div className="flex items-center">
-            <span className="font-semibold w-24">Almacenamiento:</span>
-            <span className="truncate flex-1" title={product.storage}>{product.storage}</span>
-          </div>
-          <div className="flex items-center">
-            <span className="font-semibold w-24">Gráficos:</span>
-            <span className="truncate flex-1" title={product.gpu || product.graphics}>{product.gpu || product.graphics}</span>
-          </div>
-          <div className="flex items-center">
-            <span className="font-semibold w-24">Pantalla:</span>
-            <span className="truncate flex-1" title={product.display}>{product.display}</span>
-          </div>
-        </div>
-
         {/* Price & Stores Comparison */}
         <div className="border-t pt-4 mt-auto">
           <div className="mb-3">

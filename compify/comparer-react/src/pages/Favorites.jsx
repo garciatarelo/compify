@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import ProductCard from '../components/ProductCard';
 import ProductDetailModal from '../components/ProductDetailModal';
-import { mockProducts } from '../data/mockProducts';
 
 // TODO API: Este componente consumirá GET /api/users/favorites para obtener los productos favoritos
 // La lista de IDs favoritos se mantendrá en el contexto, pero los detalles vendrán de la API
@@ -25,7 +24,7 @@ function Favorites() {
 
   // Obtener productos favoritos
   // TODO API: Reemplazar con GET /api/products?ids=1,2,3 o GET /api/users/favorites
-  const favoriteProducts = mockProducts.filter(p => favorites.includes(p.id));
+  const favoriteProducts = []; // Placeholder until API integration
 
   return (
     <div className="min-h-screen bg-gray-50">

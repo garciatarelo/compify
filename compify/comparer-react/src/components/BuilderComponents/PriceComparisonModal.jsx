@@ -1,12 +1,19 @@
-import { Trophy, Store } from 'lucide-react';
+import { Trophy, Store, CheckCircle } from 'lucide-react';
 import Modal from '../Modal';
 import { calculateStoreCombinations } from '../../utils/compatibility';
 import { formatPrice } from '../../utils/formatters';
 import { useBuilder } from '../../context/BuilderContext';
 
 function PriceComparisonModal({ isOpen, onClose }) {
-  const { currentBuild } = useBuilder();
-  const combinations = calculateStoreCombinations(currentBuild);
+  const { currentBuild, updateBuildStores, componentsData } = useBuilder();
+  const combinations = calculateStoreCombinations(currentBuild, componentsData);
+
+  const handleSelectCombination = (combo) => {
+    if (combo.breakdown) {
+      updateBuildStores(combo.breakdown);
+      onClose();
+    }
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Comparación de Precios por Tienda" size="xl">
@@ -104,12 +111,23 @@ function PriceComparisonModal({ isOpen, onClose }) {
                 </div>
               </div>
 
+              {/* Action Button */}
+              {!combo.isSelected && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={() => handleSelectCombination(combo)}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                  >
+                    <CheckCircle size={16} />
+                    Elegir esta opción
+                  </button>
+                </div>
+              )}
+
               {/* Position Indicator */}
-              {isFirst && (
+              {isFirst && combo.isSelected && (
                 <div className="mt-3 pt-3 border-t border-blue-200 text-sm text-blue-700">
-                  {combo.isSelected
-                    ? '📌 Esta es tu configuración actual con las tiendas que elegiste'
-                    : '🏆 Esta es la opción más económica'}
+                  📌 Esta es tu configuración actual con las tiendas que elegiste
                 </div>
               )}
             </div>

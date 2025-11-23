@@ -126,7 +126,7 @@ function ComponentModalNew({ isOpen, onClose, categoryKey, category }) {
 
                       return (
                         <div 
-                          key={store.name}
+                          key={`${store.name}-${index}`}
                           className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
                             isSelected 
                               ? 'bg-indigo-50 border-indigo-500 shadow-md' 
@@ -162,6 +162,14 @@ function ComponentModalNew({ isOpen, onClose, categoryKey, category }) {
                             >
                               {isSelected ? '✓ Seleccionada' : 'Elegir aquí'}
                             </button>
+                            <a
+                              href={store.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-4 py-2 rounded-lg font-medium transition whitespace-nowrap bg-gray-100 border-2 border-gray-300 text-gray-700 hover:bg-gray-200"
+                            >
+                              Ver
+                            </a>
                           </div>
                         </div>
                       );

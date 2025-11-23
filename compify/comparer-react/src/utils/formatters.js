@@ -6,7 +6,10 @@
  * @returns {string} 
  */
 export function formatPrice(price) {
-  return `$/ ${price.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const numPrice = Number(price);
+  if (price === undefined || price === null || isNaN(numPrice)) return '$/ 0.00';
+  if (!isFinite(numPrice)) return '$/ --';
+  return `$/ ${numPrice.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /**

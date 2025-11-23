@@ -71,20 +71,37 @@ def extract_specs(title):
     if display_match:
         specs["display"] = f"{display_match.group(1)}\""
         
-    # Procesador (básico)
-    if "intel" in title_lower:
-        if "i3" in title_lower: specs["cpu"] = "Intel Core i3"
-        elif "i5" in title_lower: specs["cpu"] = "Intel Core i5"
-        elif "i7" in title_lower: specs["cpu"] = "Intel Core i7"
-        elif "i9" in title_lower: specs["cpu"] = "Intel Core i9"
-        elif "celeron" in title_lower: specs["cpu"] = "Intel Celeron"
-        elif "pentium" in title_lower: specs["cpu"] = "Intel Pentium"
-    elif "amd" in title_lower or "ryzen" in title_lower:
-        if "ryzen 3" in title_lower: specs["cpu"] = "AMD Ryzen 3"
-        elif "ryzen 5" in title_lower: specs["cpu"] = "AMD Ryzen 5"
-        elif "ryzen 7" in title_lower: specs["cpu"] = "AMD Ryzen 7"
-        elif "ryzen 9" in title_lower: specs["cpu"] = "AMD Ryzen 9"
-        elif "athlon" in title_lower: specs["cpu"] = "AMD Athlon"
+    # Procesador (básico y específico)
+    cpu_specific_match = re.search(r'(i[3579]-\d{4,}[A-Z]*|Ryzen\s*\d+\s*\d{4,}[A-Z]*)', title, re.IGNORECASE)
+    
+    if cpu_specific_match:
+        cpu_model = cpu_specific_match.group(1)
+        if title_lower.find('intel') != -1 or cpu_model.lower().startswith('i'):
+             # Normalizar Intel
+             if not cpu_model.lower().startswith('intel'):
+                 specs["cpu"] = f"Intel Core {cpu_model}"
+             else:
+                 specs["cpu"] = cpu_model
+        elif title_lower.find('amd') != -1 or 'ryzen' in cpu_model.lower():
+             if not cpu_model.lower().startswith('amd'):
+                 specs["cpu"] = f"AMD {cpu_model}"
+             else:
+                 specs["cpu"] = cpu_model
+    else:
+        # Fallback a lógica básica
+        if "intel" in title_lower:
+            if "i3" in title_lower: specs["cpu"] = "Intel Core i3"
+            elif "i5" in title_lower: specs["cpu"] = "Intel Core i5"
+            elif "i7" in title_lower: specs["cpu"] = "Intel Core i7"
+            elif "i9" in title_lower: specs["cpu"] = "Intel Core i9"
+            elif "celeron" in title_lower: specs["cpu"] = "Intel Celeron"
+            elif "pentium" in title_lower: specs["cpu"] = "Intel Pentium"
+        elif "amd" in title_lower or "ryzen" in title_lower:
+            if "ryzen 3" in title_lower: specs["cpu"] = "AMD Ryzen 3"
+            elif "ryzen 5" in title_lower: specs["cpu"] = "AMD Ryzen 5"
+            elif "ryzen 7" in title_lower: specs["cpu"] = "AMD Ryzen 7"
+            elif "ryzen 9" in title_lower: specs["cpu"] = "AMD Ryzen 9"
+            elif "athlon" in title_lower: specs["cpu"] = "AMD Athlon"
         
     return specs
 
@@ -161,30 +178,77 @@ def get_details_from_product_page(product_url):
                     pass
 
         # Buscar tabla de características
-        # Clase proporcionada por el usuario: elektra-elektra-compone
-        # Usamos regex para ser flexibles pero priorizando la sugerencia
-        table_div = soup.find(class_=re.compile(r'elektra-elektra-components-.*-x-tableCaracteristicas'))
-        if not table_div:
-             table_div = soup.find(class_=re.compile(r'elektra-elektra-components-.*'))
+        # Estrategia 1: Buscar cualquier tabla que contenga palabras clave de specs
+        tables = soup.find_all('table')
+        spec_rows = []
+        
+        for table in tables:
+            table_text = table.get_text().lower()
+            if 'procesador' in table_text or 'ram' in table_text or 'memoria' in table_text:
+                spec_rows.extend(table.find_all('tr'))
+                
+        # Estrategia 2: Si no hay tablas, buscar divs con clases de especificaciones (VTEX/Elektra)
+        if not spec_rows:
+            # Clases comunes en VTEX/Elektra para contenedores de specs
+            spec_containers = soup.find_all(class_=re.compile(r'(.*tableCaracteristicas.*|.*specifications.*|.*properties.*)'))
+            for container in spec_containers:
+                # A veces son divs que simulan tablas
+                rows = container.find_all(class_=re.compile(r'.*row.*'))
+                if not rows:
+                    rows = container.find_all('tr')
+                if rows:
+                    spec_rows.extend(rows)
+                    break # Usar el primer contenedor válido
 
-        if table_div:
-            rows = table_div.find_all('tr')
-            for row in rows:
-                cols = row.find_all('td')
+        if spec_rows:
+            for row in spec_rows:
+                # Intentar encontrar celdas (td, th, o divs con clases de columna)
+                cols = row.find_all(['td', 'th'])
+                
+                # Si no son td/th, buscar divs hijos directos
+                if not cols:
+                    cols = row.find_all('div', recursive=False)
+                
                 if len(cols) >= 2:
                     label = cols[0].get_text(strip=True).replace(':', '')
                     value = cols[1].get_text(strip=True)
                     
+                    # Normalización de etiquetas para matching
+                    label_lower = label.lower()
+                    
                     # Mapeo de campos
-                    if "Procesador" in label or "Modelo del procesador" in label: details['cpu_model'] = value
-                    elif "Memoria RAM" in label: details['ram'] = value
-                    elif "Disco duro" in label or "Almacenamiento" in label or "Capacidad de disco duro" in label: details['storage_raw'] = value
-                    elif "Tarjeta gráfica" in label or "Gráficos" in label: details['gpu'] = value
-                    elif "Sistema operativo" in label: details['os'] = value
-                    elif "Tamaño de pantalla" in label or "Pulgadas" in label: details['display_size'] = value
-                    elif "Resolución" in label: details['display_res'] = value
-                    elif "Pantalla táctil" in label: details['touch'] = value
-                    elif "Modelo" in label: details['model'] = value
+                    if "procesador" in label_lower: 
+                        if "modelo" in label_lower: details['cpu_model'] = value
+                        elif "familia" in label_lower: details['cpu_family'] = value # Backup
+                        else: details['cpu_model'] = value # Default fallback
+                        
+                    elif "memoria ram" in label_lower or "capacidad de la memoria ram" in label_lower: 
+                        details['ram'] = value
+                        
+                    elif "disco duro" in label_lower or "almacenamiento" in label_lower or "capacidad" in label_lower and "disco" in label_lower: 
+                        details['storage_raw'] = value
+                        
+                    elif "gráfica" in label_lower or "video" in label_lower: 
+                        details['gpu'] = value
+                        
+                    elif "sistema operativo" in label_lower: 
+                        details['os'] = value
+                        
+                    elif "tamaño de pantalla" in label_lower or "pulgadas" in label_lower: 
+                        details['display_size'] = value
+                        
+                    elif "resolución" in label_lower: 
+                        details['display_res'] = value
+                        
+                    elif "táctil" in label_lower: 
+                        details['touch'] = value
+                        
+                    elif "modelo" in label_lower and "procesador" not in label_lower and "tarjeta" not in label_lower: 
+                        details['model'] = value
+
+        # Post-procesamiento de CPU si tenemos familia pero no modelo exacto
+        if 'cpu_model' not in details and 'cpu_family' in details:
+            details['cpu_model'] = details['cpu_family']
         
         return details
     except Exception as e:

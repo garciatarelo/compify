@@ -93,37 +93,47 @@ function ProductDetailModal({ isOpen, onClose, product }) {
             <div className="grid grid-cols-2 gap-y-4 gap-x-6 mb-6 text-sm">
               <div className="flex flex-col border-b pb-2">
                 <span className="font-semibold text-gray-600">Procesador:</span>
-                <span className="text-gray-800">{product.cpu || product.processor || 'N/A'}</span>
+                <span className="text-gray-800">{product.specs?.cpu || product.cpu || product.processor || 'N/A'}</span>
               </div>
               <div className="flex flex-col border-b pb-2">
                 <span className="font-semibold text-gray-600">Tarjeta de Video:</span>
-                <span className="text-gray-800">{product.gpu || product.graphics || 'N/A'}</span>
+                <span className="text-gray-800">{product.specs?.gpu || product.gpu || product.graphics || 'N/A'}</span>
               </div>
               <div className="flex flex-col border-b pb-2">
                 <span className="font-semibold text-gray-600">Memoria RAM:</span>
-                <span className="text-gray-800">{product.ram || 'N/A'}</span>
+                <span className="text-gray-800">{product.specs?.ram || product.ram || 'N/A'}</span>
               </div>
               <div className="flex flex-col border-b pb-2">
                 <span className="font-semibold text-gray-600">Almacenamiento:</span>
-                <span className="text-gray-800">{product.storage || 'N/A'}</span>
+                <span className="text-gray-800">{product.specs?.storage || product.storage || 'N/A'}</span>
               </div>
               <div className="flex flex-col border-b pb-2">
                 <span className="font-semibold text-gray-600">Pantalla:</span>
-                <span className="text-gray-800">{product.display || 'N/A'}</span>
+                <span className="text-gray-800">{product.specs?.display || product.display || 'N/A'}</span>
               </div>
               <div className="flex flex-col border-b pb-2">
                 <span className="font-semibold text-gray-600">Resolución:</span>
-                <span className="text-gray-800">{product.display_res || 'N/A'}</span>
+                <span className="text-gray-800">{product.specs?.display_res || product.display_res || 'N/A'}</span>
               </div>
               <div className="flex flex-col border-b pb-2">
                 <span className="font-semibold text-gray-600">Táctil:</span>
-                <span className="text-gray-800">{product.touch || 'No'}</span>
+                <span className="text-gray-800">{product.specs?.touch || product.touch || 'No'}</span>
               </div>
               <div className="flex flex-col border-b pb-2">
                 <span className="font-semibold text-gray-600">Sistema Operativo:</span>
-                <span className="text-gray-800">{product.os || 'N/A'}</span>
+                <span className="text-gray-800">{product.specs?.os || product.os || 'N/A'}</span>
               </div>
             </div>
+
+            {/* Description / Raw Title */}
+            {product.description && (
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-700 mb-2">Descripción del Producto:</h4>
+                <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded border">
+                  {product.description}
+                </p>
+              </div>
+            )}
             
             {/* Price Summary */}
             <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
@@ -254,6 +264,21 @@ function ProductDetailModal({ isOpen, onClose, product }) {
                         </a>
                       </div>
                     </div>
+
+                    {/* Specs per Store */}
+                    {store.specs && (
+                      <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600">
+                        <p className="font-semibold mb-1 text-gray-700">Características reportadas por {store.name}:</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                           <span>CPU: {store.specs.cpu || 'N/A'}</span>
+                           <span>RAM: {store.specs.ram || 'N/A'}</span>
+                           <span>Almacenamiento: {store.specs.storage || 'N/A'}</span>
+                           <span>Pantalla: {store.specs.display || 'N/A'}</span>
+                           <span>GPU: {store.specs.gpu || 'N/A'}</span>
+                           <span>OS: {store.specs.os || 'N/A'}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })

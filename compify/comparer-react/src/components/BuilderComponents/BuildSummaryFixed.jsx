@@ -1,20 +1,28 @@
 import { ExternalLink, BarChart3 } from 'lucide-react';
 import { useBuilder } from '../../context/BuilderContext';
 import { formatPrice } from '../../utils/formatters';
-import { mockComponents } from '../../data/mockComponents';
 import * as LucideIcons from 'lucide-react';
 
-function BuildSummary({ onClearBuild, onOpenComparison }) {
+function BuildSummary({ componentsData, onClearBuild, onOpenComparison }) {
   const { currentBuild, buildTotal, compatibilityIssues } = useBuilder();
 
   // Obtener componentes seleccionados con URLs
   const selectedComponents = Object.entries(currentBuild)
     .filter(([key, value]) => !key.includes('_') && value !== null)
     .map(([categoryId, componentId]) => {
-      const category = mockComponents[categoryId];
+      const category = componentsData[categoryId];
       if (!category || !category.items) return null;
       
-      const component = category.items.find(item => item.id === componentId);
+      // Buscar el componente directamente o dentro de los stores (si es un grupo)
+      let component = category.items.find(item => item.id == componentId);
+      
+      if (!component) {
+        // Si no se encuentra por ID directo, buscar si el ID pertenece a alguna tienda de un grupo
+        component = category.items.find(item => 
+          item.stores && item.stores.some(s => s.product_id == componentId)
+        );
+      }
+
       if (!component) return null;
       
       const selectedStore = currentBuild[`${categoryId}_store`];
@@ -47,7 +55,8 @@ function BuildSummary({ onClearBuild, onOpenComparison }) {
       'box': 'Box',
       'hard-drive': 'HardDrive',
       'zap': 'Zap',
-      'package': 'Package'
+      'package': 'Package',
+      'fan': 'Fan'
     };
     
     const IconComponent = LucideIcons[iconMap[iconName]];
