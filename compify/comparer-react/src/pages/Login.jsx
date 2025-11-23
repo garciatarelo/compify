@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, LogIn } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -10,9 +10,15 @@ function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  // Si ya está logueado, redirigir
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  // Si el usuario está logueado, no mostrar el login
   if (user) {
-    navigate('/');
     return null;
   }
 
@@ -106,6 +112,17 @@ function Login() {
         <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
           <p className="font-semibold mb-1">💡 Demo Mode</p>
           <p>Ingresa cualquier usuario y contraseña para acceder</p>
+        </div>
+
+        {/* Register Link */}
+        <div className="mt-8 text-center">
+          <span className="text-gray-600">¿Aún no tienes cuenta?</span>
+          <a
+            href="/register"
+            className="ml-2 text-blue-600 hover:text-blue-800 font-semibold underline"
+          >
+            Regístrate
+          </a>
         </div>
       </div>
     </div>

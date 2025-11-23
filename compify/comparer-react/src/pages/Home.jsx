@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useApp } from '../context/AppContext';
 import ProductCard from '../components/ProductCard';
 import ProductDetailModal from '../components/ProductDetailModal';
-import { getLaptopsFormatted, searchLaptops } from '../services/laptopsApi';
+import { useApp } from '../context/AppContext';
+import { User } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { getLaptopsFormatted } from '../services/laptopsApi';
 
 function Home() {
-  const { filters, updateFilters, resetFilters } = useApp();
+    const { user, logout, filters, updateFilters, resetFilters } = useApp();
+    const navigate = useNavigate();
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);

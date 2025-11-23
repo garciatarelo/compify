@@ -76,11 +76,15 @@ export const AppProvider = ({ children }) => {
   };
 
   const toggleFavorite = (productId) => {
+    console.log('Toggling favorite for productId:', productId);
     if (favorites.includes(productId)) {
       removeFavorite(productId);
     } else {
       addFavorite(productId);
     }
+    setTimeout(() => {
+      console.log('Current favorites:', favorites);
+    }, 0);
   };
 
   const isFavorite = (productId) => {
@@ -88,19 +92,28 @@ export const AppProvider = ({ children }) => {
   };
 
   // Funciones para autenticación
-  const login = (username, password) => {
-    // Simulación de login (en producción iría a una API)
-    if (username && password) {
-      const userData = {
-        id: '1',
-        username: username,
-        email: `${username}@example.com`,
-        loginTime: new Date().toISOString()
-      };
-      setUser(userData);
-      return true;
+  const login = async (username, password) => {
+    if (!username || !password) return false;
+    try {
+      const response = await fetch('http://localhost:8000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: `${username}@example.com`, // El backend espera 'email'
+          password
+        })
+      });
+      const data = await response.json();
+      if (response.ok && data.user) {
+        setUser(data.user); // data.user contiene el usuario
+        return true;
+      }
+      return false;
+    } catch (err) {
+      return false;
     }
-    return false;
   };
 
   const logout = () => {

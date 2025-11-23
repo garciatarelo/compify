@@ -13,10 +13,23 @@ class productSeeder extends Seeder
      */
     public function run(): void
     {
+        DB::table('product_groups')->insert([
+            [
+                'id' => 1,
+                'name' => 'Grupo Dell',
+                'image_url' => 'https://example.com/images/dell_xps15_9530.jpg',
+            ],
+            [
+                'id' => 2,
+                'name' => 'Grupo Apple',
+                'image_url' => 'https://example.com/images/macbook_pro_16_m1_max.jpg',
+            ]
+        ]);
         DB::table('products')->insert([
             [
                 'product_id' => 1,
                 'category_id' => 1,
+                'product_group_id' => 1,
                 'brand' => 'Dell',
                 'model' => 'XPS 15 9530',
                 'image_url' => 'https://example.com/images/dell_xps15_9530.jpg',
@@ -32,6 +45,7 @@ class productSeeder extends Seeder
             [
                 'product_id' => 2,
                 'category_id' => 1,
+                'product_group_id' => 2,
                 'brand' => 'Apple',
                 'model' => 'MacBook Pro 16-inch M1 Max',
                 'image_url' => 'https://example.com/images/macbook_pro_16_m1_max.jpg',
@@ -47,6 +61,7 @@ class productSeeder extends Seeder
             [
                 'product_id' => 3,
                 'category_id' => 2,
+                'product_group_id' => null,
                 'brand' => 'AMD',
                 'model' => 'Ryzen 9 7950X',
                 'image_url' => 'https://example.com/images/amd_ryzen9_7950x.jpg',

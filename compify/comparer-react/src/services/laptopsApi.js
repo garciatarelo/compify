@@ -13,6 +13,18 @@ const apiClient = axios.create({
   },
 });
 
+// Interceptor para agregar el token JWT si existe
+apiClient.interceptors.request.use(
+  (config) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.token) {
+      config.headers['Authorization'] = `Bearer ${user.token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 /**
  * Obtener todas las laptops con paginación
  * @param {Object} params - Parámetros de consulta (page, per_page, brand, min_price, max_price)
@@ -65,45 +77,48 @@ export const transformLaptopsToFrontendFormat = (apiLaptops) => {
     return [];
   }
 
-  return apiLaptops.map(laptop => {
-    // Extraer RAM como número (ej: "16GB DDR5" -> 16)
-    const ramMatch = laptop.ram?.match(/(\d+)/);
-    const ramGB = ramMatch ? parseInt(ramMatch[1]) : 0;
+  // La nueva respuesta es un array de grupos, cada uno con un array de productos
+  const products = [];
+  apiLaptops.forEach(group => {
+    if (Array.isArray(group.products)) {
+      group.products.forEach(product => {
+        // Extraer RAM como número (ej: "16GB DDR5" -> 16)
+        const ramMatch = product.ram?.match(/(\d+)/);
+        const ramGB = ramMatch ? parseInt(ramMatch[1]) : 0;
 
-    return {
-      id: laptop.product_id,
-      brand: laptop.brand,
-      name: `${laptop.brand} ${laptop.model}`, // Combinar marca y modelo para el nombre
-      model: laptop.model,
-      processor: laptop.cpu || 'N/A', // ProductCard espera "processor"
-      cpu: laptop.cpu,
-      ram: laptop.ram || `${ramGB}GB`, // ProductCard espera un string o número, preferimos el string original
-      ramFull: laptop.ram, // Mantener el string completo por si acaso
-      storage: laptop.storage || 'N/A',
-      graphics: laptop.gpu || 'Integrada', // ProductCard espera "graphics"
-      display: laptop.display || 'N/A',
-      imageUrl: laptop.image_url || 'https://placehold.co/400x300/6366f1/white?text=Laptop', // ProductCard espera "imageUrl"
-      description: laptop.description,
-      os: laptop.os || 'N/A',
-      specs: laptop.specs || {},
-      
-      // Precios de tiendas (formato compatible con ProductCard)
-      stores: laptop.prices?.map(price => ({
-        name: price.store_name || 'Tienda', // Fallback si store_name es null
-        price: parseFloat(price.price),
-        url: price.url,
-        logo: price.logo_url || '🏪',
-        shipping: 'Consultar' // Valor por defecto
-      })) || [],
-      
-      // Precios agregados
-      minPrice: parseFloat(laptop.min_price) || 0,
-      maxPrice: parseFloat(laptop.max_price) || 0,
-      avgPrice: laptop.prices?.length > 0 
-        ? laptop.prices.reduce((sum, p) => sum + parseFloat(p.price), 0) / laptop.prices.length 
-        : 0,
-    };
+        products.push({
+          id: product.product_id, // Usar product_id como identificador único
+          brand: product.brand,
+          name: `${product.brand} ${product.model}`,
+          model: product.model,
+          processor: product.cpu || 'N/A',
+          cpu: product.cpu,
+          ram: product.ram || `${ramGB}GB`,
+          ramFull: product.ram,
+          storage: product.storage || 'N/A',
+          graphics: product.gpu || 'Integrada',
+          display: product.display || 'N/A',
+          imageUrl: product.image_url || 'https://placehold.co/400x300/6366f1/white?text=Laptop',
+          description: product.description,
+          os: product.os || 'N/A',
+          specs: product.specs || {},
+          stores: product.prices?.map(price => ({
+            name: price.store_name || 'Tienda',
+            price: parseFloat(price.price),
+            url: price.url,
+            logo: price.logo_url || '🏪',
+            shipping: 'Consultar'
+          })) || [],
+          minPrice: parseFloat(product.min_price) || 0,
+          maxPrice: parseFloat(product.max_price) || 0,
+          avgPrice: product.prices?.length > 0
+            ? product.prices.reduce((sum, p) => sum + parseFloat(p.price), 0) / product.prices.length
+            : 0,
+        });
+      });
+    }
   });
+  return products;
 };
 
 /**

@@ -13,17 +13,25 @@ class storeSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('stores')->insert([
+        $stores = [
             [
-                'store_id' => 1,
                 'name_store' => 'Amazon',
-                'store_url' => 'https://www.amazon.com',
+                'base_url' => 'https://www.amazon.com',
             ],
             [
-                'store_id' => 2,
                 'name_store' => 'MercadoLibre',
-                'store_url' => 'https://www.mercadolibre.com',
+                'base_url' => 'https://www.mercadolibre.com',
             ],
-        ]);
+        ];
+
+        foreach ($stores as $store) {
+            DB::table('stores')->updateOrInsert(
+                ['name_store' => $store['name_store']],
+                array_merge($store, [
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ])
+            );
+        }
     }
 }

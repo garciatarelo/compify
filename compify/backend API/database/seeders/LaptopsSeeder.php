@@ -7,18 +7,22 @@ use Illuminate\Support\Facades\DB;
 
 class LaptopsSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Crear categoría Laptops si no existe
-        $laptopCategory = DB::table('categories')->updateOrInsert(
-            ['category_name' => 'Laptops'],
-            ['category_id' => 8]
-        );
+        // Obtener o crear la categoría Laptops
+        $category = DB::table('categories')
+            ->where('category_name', 'Laptops')
+            ->first();
 
-        $categoryId = DB::table('categories')->where('category_name', 'Laptops')->value('category_id');
+        if (!$category) {
+            $categoryId = DB::table('categories')->insertGetId([
+                'category_name' => 'Laptops',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        } else {
+            $categoryId = $category->category_id;
+        }
 
         // Crear tiendas si no existen
         $stores = [
@@ -30,7 +34,10 @@ class LaptopsSeeder extends Seeder
         foreach ($stores as $store) {
             DB::table('stores')->updateOrInsert(
                 ['name_store' => $store['name_store']],
-                $store
+                array_merge($store, [
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ])
             );
         }
 
@@ -156,36 +163,53 @@ class LaptopsSeeder extends Seeder
             $prices = $laptopData['prices'];
             unset($laptopData['prices']);
 
-            // Insertar laptop
-            $productId = DB::table('products')->insertGetId([
-                'category_id' => $categoryId,
-                'brand' => $laptopData['brand'],
-                'model' => $laptopData['model'],
-                'cpu' => $laptopData['cpu'],
-                'ram' => $laptopData['ram'],
-                'storage' => $laptopData['storage'],
-                'display' => $laptopData['display'],
-                'image_url' => $laptopData['image_url'],
-                'description' => $laptopData['description'],
-            ]);
+            // Verificar si la laptop ya existe
+            $exists = DB::table('products')
+                ->where('brand', $laptopData['brand'])
+                ->where('model', $laptopData['model'])
+                ->exists();
 
-            // Insertar precios
-            foreach ($prices as $priceData) {
-                $storeId = DB::table('stores')
-                    ->where('name_store', $priceData['store'])
-                    ->value('store_id');
+            if (!$exists) {
+                // Agrupar especificaciones en un JSON
+                $specs = json_encode([
+                    'cpu' => $laptopData['cpu'],
+                    'ram' => $laptopData['ram'],
+                    'storage' => $laptopData['storage'],
+                    'display' => $laptopData['display'],
+                ]);
 
-                if ($storeId) {
-                    DB::table('prices')->insert([
-                        'product_id' => $productId,
-                        'store_id' => $storeId,
-                        'price' => $priceData['price'],
-                        'product_url' => '',
-                    ]);
+                // Insertar laptop con el campo 'specs'
+                $productId = DB::table('products')->insertGetId([
+                    'category_id' => $categoryId,
+                    'brand' => $laptopData['brand'],
+                    'model' => $laptopData['model'],
+                    'image_url' => $laptopData['image_url'],
+                    'description' => $laptopData['description'],
+                    'specs' => $specs,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Insertar precios
+                foreach ($prices as $priceData) {
+                    $storeId = DB::table('stores')
+                        ->where('name_store', $priceData['store'])
+                        ->value('store_id');
+
+                    if ($storeId) {
+                        DB::table('prices')->insert([
+                            'product_id' => $productId,
+                            'store_id' => $storeId,
+                            'price' => $priceData['price'],
+                            'product_url' => '',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
                 }
             }
         }
 
-        echo "✓ Insertadas 8 laptops con sus precios en múltiples tiendas\n";
+        echo "✓ Proceso de seeding de laptops completado\n";
     }
 }
