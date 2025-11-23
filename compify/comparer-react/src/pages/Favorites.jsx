@@ -1,18 +1,34 @@
 import { Heart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import ProductCard from '../components/ProductCard';
 import ProductDetailModal from '../components/ProductDetailModal';
+import { getLaptopsFormatted } from '../services/laptopsApi';
 
-// TODO API: Este componente consumirá GET /api/users/favorites para obtener los productos favoritos
-// La lista de IDs favoritos se mantendrá en el contexto, pero los detalles vendrán de la API
+// Este componente ahora muestra los productos favoritos reales
 function Favorites() {
   const { favorites } = useApp();
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const result = await getLaptopsFormatted({ per_page: 100 });
+        setAllProducts(result.laptops || result);
+      } catch (err) {
+        setAllProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const handleViewDetails = (product) => {
-    // TODO API: Aquí se podría hacer GET /api/products/{id} para detalles actualizados
     setSelectedProduct(product);
     setShowDetailModal(true);
   };
@@ -22,9 +38,8 @@ function Favorites() {
     setSelectedProduct(null);
   };
 
-  // Obtener productos favoritos
-  // TODO API: Reemplazar con GET /api/products?ids=1,2,3 o GET /api/users/favorites
-  const favoriteProducts = []; // Placeholder until API integration
+  // Filtrar productos favoritos reales
+  const favoriteProducts = allProducts.filter(p => favorites.includes(p.id));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -41,7 +56,12 @@ function Favorites() {
         </div>
 
         {/* Content */}
-        {favoriteProducts.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+            <p className="mt-4 text-gray-600">Cargando favoritos...</p>
+          </div>
+        ) : favoriteProducts.length > 0 ? (
           <>
             <div className="mb-4 text-gray-600">
               {favoriteProducts.length} producto{favoriteProducts.length !== 1 ? 's' : ''} favorito{favoriteProducts.length !== 1 ? 's' : ''}

@@ -43,10 +43,13 @@ class LaptopController extends Controller
         try {
             DB::beginTransaction();
 
-            $laptopCategory = Category::firstOrCreate(
-                ['category_name' => 'Laptops'],
-                ['category_id' => 8]
-            );
+            $laptopCategory = Category::where('category_name', 'Laptops')->first();
+            if (!$laptopCategory) {
+                $laptopCategory = Category::create([
+                    'category_id' => 1,
+                    'category_name' => 'Laptops'
+                ]);
+            }
 
             $inserted = 0;
             $updated = 0;
@@ -256,13 +259,10 @@ class LaptopController extends Controller
 
             // Transform
             $groups->getCollection()->transform(function ($group) {
-                // Collect all prices from all products in the group
                 $allPrices = collect();
-                $firstProduct = $group->products->first();
-                
-                if (!$firstProduct) return null; // Should not happen due to whereHas
-
+                $products = [];
                 foreach ($group->products as $product) {
+                    $productPrices = [];
                     foreach ($product->prices as $price) {
                         $allPrices->push([
                             'store_name' => $price->store->name_store ?? 'Unknown',
@@ -271,16 +271,29 @@ class LaptopController extends Controller
                             'logo_url' => '',
                             'specs' => $product->specs
                         ]);
+                        $productPrices[] = [
+                            'store_name' => $price->store->name_store ?? 'Unknown',
+                            'price' => $price->price,
+                            'url' => $price->product_url,
+                            'logo_url' => ''
+                        ];
                     }
+                    $products[] = [
+                        'product_id' => $product->product_id,
+                        'brand' => $product->brand,
+                        'model' => $product->model,
+                        'specs' => $product->specs,
+                        'image_url' => $product->image_url,
+                        'prices' => $productPrices,
+                        'min_price' => collect($productPrices)->min('price') ?? 0,
+                        'max_price' => collect($productPrices)->max('price') ?? 0,
+                    ];
                 }
-
                 return [
                     'group_id' => $group->id,
                     'name' => $group->name,
-                    'image_url' => $group->image_url ?? $firstProduct->image_url,
-                    'brand' => $firstProduct->brand,
-                    'model' => $firstProduct->model,
-                    'specs' => $firstProduct->specs,
+                    'image_url' => $group->image_url ?? ($products[0]['image_url'] ?? null),
+                    'products' => $products,
                     'prices' => $allPrices,
                     'min_price' => $allPrices->min('price') ?? 0,
                     'max_price' => $allPrices->max('price') ?? 0,

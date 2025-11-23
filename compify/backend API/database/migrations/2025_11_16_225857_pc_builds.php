@@ -13,12 +13,14 @@ return new class extends Migration
     {
         Schema::create('pc_builds', function (Blueprint $table) {
             $table->id('build_id');
-            $table->foreignId('user_id')
-                  ->constrained('users', 'user_id')
-                  ->onDelete('cascade');
+            $table->unsignedBigInteger('user_id');
             $table->string('build_name', 100);
             $table->decimal('total_price', 10, 2)->nullable();
             $table->timestamps();
+
+            $table->foreign('user_id')
+                  ->references('user_id')->on('users')
+                  ->onDelete('cascade');
         });
     }
 

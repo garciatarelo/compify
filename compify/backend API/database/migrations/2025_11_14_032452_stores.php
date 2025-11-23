@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('stores', function (Blueprint $table) {
             $table->id('store_id');
             $table->string('name_store', 100);
-            $table->string('store_url', 255)->nullable();
+            $table->string('base_url', 255)->nullable();
             $table->timestamps();
         });
     }

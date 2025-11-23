@@ -36,6 +36,9 @@ Route::get('/test', function () {
 // Login (POST)
 Route::post('/login', [AuthController::class, 'login']);
 
+// Registro de usuario (POST)
+Route::post('/register', [UsersController::class, 'store']);
+
 // Ruta GET para verificar que login existe
 Route::get('/login', function () {
     return response()->json([
