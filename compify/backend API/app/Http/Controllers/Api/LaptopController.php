@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\ProductGroup;
 use App\Models\Category;
 use App\Models\Price;
 use App\Models\Store;
@@ -60,166 +61,104 @@ class LaptopController extends Controller
                         ]
                     );
 
-                    // Normalización básica para búsqueda
-                    $searchBrand = trim($laptopData['brand']);
-                    $searchModel = trim($laptopData['model']);
-                    
-                    $ramCapacity = null;
-                    $ramType = null;
-                    if (!empty($laptopData['ram'])) {
-                        if (preg_match('/(\d+)\s*GB/i', $laptopData['ram'], $matches)) {
-                            $ramCapacity = (int)$matches[1];
-                        }
-                        if (preg_match('/(DDR\d[A-Z]*)/i', $laptopData['ram'], $matches)) {
-                            $ramType = strtoupper($matches[1]);
-                        }
-                    }
+                    $productUrl = $laptopData['product_url'] ?? '';
 
-                    // Intento 1: Búsqueda exacta
-                    $query = Product::where('brand', $searchBrand)
-                        ->where('model', $searchModel)
-                        ->where('category_id', $laptopCategory->category_id);
-                    
-                    // Refinar por Pantalla (Display) - Estricto
-                    if (!empty($laptopData['display']) && preg_match('/(\d+(\.\d+)?)/', $laptopData['display'], $matches)) {
-                        $displaySize = $matches[1];
-                        $query->where('specs->display', 'LIKE', "%{$displaySize}%");
-                    }
+                    // Check if this specific store item already exists (by URL)
+                    $existingPrice = Price::where('product_url', $productUrl)
+                                          ->where('store_id', $store->store_id)
+                                          ->first();
 
-                    $product = $query->first();
-
-                    // Intento 2: Búsqueda flexible (si no hay exacta)
-                    if (!$product) {
-                        $product = Product::where('brand', $searchBrand)
-                            ->where('category_id', $laptopCategory->category_id)
-                            ->where(function($query) use ($searchModel) {
-                                // Evitar coincidencias vacías o muy cortas
-                                if (strlen($searchModel) > 3) {
-                                    $query->where('model', 'LIKE', "%{$searchModel}%")
-                                          ->orWhereRaw("? LIKE CONCAT('%', model, '%')", [$searchModel]);
+                    if ($existingPrice) {
+                        // Update price
+                        $existingPrice->price = $laptopData['price'];
+                        $existingPrice->save();
+                        
+                        // Update Product details (Brand, Model, Specs)
+                        $product = Product::find($existingPrice->product_id);
+                        if ($product) {
+                            // Parse RAM and Storage again for update
+                            $ramCapacity = null;
+                            $ramType = null;
+                            if (!empty($laptopData['ram'])) {
+                                if (preg_match('/(\d+)\s*GB/i', $laptopData['ram'], $matches)) {
+                                    $ramCapacity = (int)$matches[1];
                                 }
-                            });
-                        
-                        // Refinar por Pantalla (Display) - Estricto también en flexible
-                        if (!empty($laptopData['display']) && preg_match('/(\d+(\.\d+)?)/', $laptopData['display'], $matches)) {
-                            $displaySize = $matches[1];
-                            $product->where('specs->display', 'LIKE', "%{$displaySize}%");
+                                if (preg_match('/(DDR\d[A-Z]*)/i', $laptopData['ram'], $matches)) {
+                                    $ramType = strtoupper($matches[1]);
+                                }
+                            }
+
+                            $storageCapacity = null;
+                            $storageType = null;
+                            if (!empty($laptopData['storage'])) {
+                                if (preg_match('/(\d+)\s*(GB|TB)/i', $laptopData['storage'], $matches)) {
+                                    $val = (int)$matches[1];
+                                    $unit = strtoupper($matches[2]);
+                                    $storageCapacity = ($unit === 'TB') ? $val * 1024 : $val;
+                                }
+                                if (preg_match('/(SSD|HDD|eMMC)/i', $laptopData['storage'], $matches)) {
+                                    $storageType = strtoupper($matches[1]);
+                                }
+                            }
+
+                            $product->brand = $laptopData['brand'];
+                            $product->model = $laptopData['model'];
+                            $product->capacity = $ramCapacity;
+                            $product->ram_type = $ramType;
+                            $product->storage_capacity = $storageCapacity;
+                            $product->storage_type = $storageType;
+                            
+                            // Update specs JSON
+                            $currentSpecs = $product->specs ?? [];
+                            $newSpecs = [
+                                'cpu' => $laptopData['cpu'] ?? 'N/A',
+                                'ram' => $laptopData['ram'] ?? 'N/A',
+                                'storage' => $laptopData['storage'] ?? 'N/A',
+                                'display' => $laptopData['display'] ?? 'N/A',
+                                'gpu' => $laptopData['gpu'] ?? 'Integrada',
+                                'os' => $laptopData['os'] ?? 'No especificado',
+                            ];
+                            // Merge with existing specs to preserve other fields if any
+                            $product->specs = array_merge($currentSpecs, $newSpecs);
+                            
+                            $product->save();
                         }
                         
-                        // Refinar por CPU si está disponible (búsqueda simple de palabras clave)
-                        if (!empty($laptopData['cpu'])) {
-                            $cpuKeywords = [];
-                            if (stripos($laptopData['cpu'], 'i3') !== false) $cpuKeywords[] = 'i3';
-                            elseif (stripos($laptopData['cpu'], 'i5') !== false) $cpuKeywords[] = 'i5';
-                            elseif (stripos($laptopData['cpu'], 'i7') !== false) $cpuKeywords[] = 'i7';
-                            elseif (stripos($laptopData['cpu'], 'i9') !== false) $cpuKeywords[] = 'i9';
-                            elseif (stripos($laptopData['cpu'], 'Ryzen 3') !== false) $cpuKeywords[] = 'Ryzen 3';
-                            elseif (stripos($laptopData['cpu'], 'Ryzen 5') !== false) $cpuKeywords[] = 'Ryzen 5';
-                            elseif (stripos($laptopData['cpu'], 'Ryzen 7') !== false) $cpuKeywords[] = 'Ryzen 7';
-                            elseif (stripos($laptopData['cpu'], 'Ryzen 9') !== false) $cpuKeywords[] = 'Ryzen 9';
-                            elseif (stripos($laptopData['cpu'], 'Celeron') !== false) $cpuKeywords[] = 'Celeron';
-                            elseif (stripos($laptopData['cpu'], 'Pentium') !== false) $cpuKeywords[] = 'Pentium';
-                            elseif (stripos($laptopData['cpu'], 'Athlon') !== false) $cpuKeywords[] = 'Athlon';
-                            elseif (stripos($laptopData['cpu'], 'M1') !== false) $cpuKeywords[] = 'M1';
-                            elseif (stripos($laptopData['cpu'], 'M2') !== false) $cpuKeywords[] = 'M2';
-                            elseif (stripos($laptopData['cpu'], 'M3') !== false) $cpuKeywords[] = 'M3';
-                            
-                            if (!empty($cpuKeywords)) {
-                                $product->where(function($q) use ($cpuKeywords) {
-                                    foreach ($cpuKeywords as $keyword) {
-                                        $q->where('specs', 'LIKE', "%{$keyword}%");
-                                    }
-                                });
+                        $updated++;
+                    } else {
+                        // Create new Product (Unmatched)
+                        // Parse RAM and Storage for specific columns if needed
+                        $ramCapacity = null;
+                        $ramType = null;
+                        if (!empty($laptopData['ram'])) {
+                            if (preg_match('/(\d+)\s*GB/i', $laptopData['ram'], $matches)) {
+                                $ramCapacity = (int)$matches[1];
+                            }
+                            if (preg_match('/(DDR\d[A-Z]*)/i', $laptopData['ram'], $matches)) {
+                                $ramType = strtoupper($matches[1]);
                             }
                         }
 
-                        // NOTA: Se eliminaron las restricciones estrictas de RAM y Almacenamiento
-                        // para permitir agrupar variantes con diferente capacidad pero mismo procesador/pantalla.
-                        
-                        $product = $product->first();
-                    }
-
-                    $storageCapacity = null;
-
-                    $storageCapacity = null;
-                    $storageType = null;
-                    if (!empty($laptopData['storage'])) {
-                        // Detectar capacidad (GB o TB)
-                        if (preg_match('/(\d+)\s*(GB|TB)/i', $laptopData['storage'], $matches)) {
-                            $val = (int)$matches[1];
-                            $unit = strtoupper($matches[2]);
-                            $storageCapacity = ($unit === 'TB') ? $val * 1024 : $val;
-                        }
-                        // Detectar tipo
-                        if (preg_match('/(SSD|HDD|eMMC)/i', $laptopData['storage'], $matches)) {
-                            $storageType = strtoupper($matches[1]);
-                        }
-                    }
-
-                    if ($product) {
-                        // Actualizar producto existente
-                        // Prioridad a Cyberpuerta para detalles visuales y técnicos si el producto actual tiene datos pobres
-                        // O si el dato entrante es de Cyberpuerta y el actual no (heurística simple: si store_name es Cyberpuerta, forzamos update)
-                        
-                        $isCyberpuerta = strtolower($laptopData['store_name']) === 'cyberpuerta';
-                        
-                        $updateData = [
-                            // Actualizar columnas específicas siempre si vienen en el request
-                            'capacity' => $ramCapacity ?? $product->capacity,
-                            'ram_type' => $ramType ?? $product->ram_type,
-                            'storage_capacity' => $storageCapacity ?? $product->storage_capacity,
-                            'storage_type' => $storageType ?? $product->storage_type,
-                        ];
-
-                        // Solo actualizar imagen y descripción si están vacías O si viene de Cyberpuerta (que suele tener mejores datos)
-                        if (empty($product->image_url) || ($isCyberpuerta && !empty($laptopData['image_url']))) {
-                            $updateData['image_url'] = $laptopData['image_url'];
-                        }
-                        
-                        if (empty($product->description) || ($isCyberpuerta && !empty($laptopData['description']))) {
-                            $updateData['description'] = $laptopData['description'];
+                        $storageCapacity = null;
+                        $storageType = null;
+                        if (!empty($laptopData['storage'])) {
+                            if (preg_match('/(\d+)\s*(GB|TB)/i', $laptopData['storage'], $matches)) {
+                                $val = (int)$matches[1];
+                                $unit = strtoupper($matches[2]);
+                                $storageCapacity = ($unit === 'TB') ? $val * 1024 : $val;
+                            }
+                            if (preg_match('/(SSD|HDD|eMMC)/i', $laptopData['storage'], $matches)) {
+                                $storageType = strtoupper($matches[1]);
+                            }
                         }
 
-                        // Merge de specs
-                        $currentSpecs = $product->specs ?? [];
-                        $newSpecs = [
-                            'cpu' => $laptopData['cpu'] ?? 'N/A',
-                            'ram' => $laptopData['ram'] ?? 'N/A',
-                            'storage' => $laptopData['storage'] ?? 'N/A',
-                            'display' => $laptopData['display'] ?? 'N/A',
-                            'gpu' => $laptopData['gpu'] ?? 'Integrada',
-                            'os' => $laptopData['os'] ?? 'No especificado',
-                            'cpu_family' => $laptopData['cpu_family'] ?? null,
-                            'cpu_model' => $laptopData['cpu_model'] ?? null,
-                            'ssd' => $laptopData['ssd'] ?? null,
-                            'hdd' => $laptopData['hdd'] ?? null,
-                            'emmc' => $laptopData['emmc'] ?? null,
-                            'display_res' => $laptopData['display_res'] ?? null,
-                            'touch' => $laptopData['touch'] ?? null,
-                            'keyboard' => $laptopData['keyboard'] ?? null,
-                        ];
-                        
-                        // Si es Cyberpuerta, sobrescribimos specs. Si no, solo llenamos huecos.
-                        if ($isCyberpuerta) {
-                            $mergedSpecs = array_merge($currentSpecs, array_filter($newSpecs));
-                        } else {
-                            $mergedSpecs = array_merge(array_filter($newSpecs), $currentSpecs); // Current specs tienen prioridad si no es Cyberpuerta
-                        }
-                        
-                        $updateData['specs'] = $mergedSpecs;
-
-                        $product->update($updateData);
-                        $updated++;
-                    } else {
-                        // Crear nuevo producto
                         $product = Product::create([
                             'category_id' => $laptopCategory->category_id,
                             'brand' => $laptopData['brand'],
                             'model' => $laptopData['model'],
                             'image_url' => $laptopData['image_url'] ?? '',
                             'description' => $laptopData['description'] ?? '',
-                            // Llenar columnas específicas
-                            'capacity' => $ramCapacity, // RAM Capacity
+                            'capacity' => $ramCapacity,
                             'ram_type' => $ramType,
                             'storage_capacity' => $storageCapacity,
                             'storage_type' => $storageType,
@@ -230,7 +169,6 @@ class LaptopController extends Controller
                                 'display' => $laptopData['display'] ?? 'N/A',
                                 'gpu' => $laptopData['gpu'] ?? 'Integrada',
                                 'os' => $laptopData['os'] ?? 'No especificado',
-                                // Campos detallados
                                 'cpu_family' => $laptopData['cpu_family'] ?? null,
                                 'cpu_model' => $laptopData['cpu_model'] ?? null,
                                 'ssd' => $laptopData['ssd'] ?? null,
@@ -241,20 +179,17 @@ class LaptopController extends Controller
                                 'keyboard' => $laptopData['keyboard'] ?? null,
                             ],
                         ]);
+
+                        // Create Price entry
+                        Price::create([
+                            'product_id' => $product->product_id,
+                            'store_id' => $store->store_id,
+                            'price' => $laptopData['price'],
+                            'product_url' => $productUrl
+                        ]);
+
                         $inserted++;
                     }
-
-                    // Actualizar o crear precio
-                    Price::updateOrCreate(
-                        [
-                            'product_id' => $product->product_id,
-                            'store_id' => $store->store_id
-                        ],
-                        [
-                            'price' => $laptopData['price'],
-                            'product_url' => $laptopData['product_url'] ?? ''
-                        ]
-                    );
 
                 } catch (\Exception $e) {
                     $errors[] = [
@@ -291,72 +226,55 @@ class LaptopController extends Controller
     public function index(Request $request)
     {
         try {
-            $laptopCategory = Category::where('category_name', 'Laptops')->first();
+            // Only fetch groups that have products
+            $query = ProductGroup::has('products')
+                ->with(['products.prices.store', 'products.category']);
+
+            // Search logic needs to search within products
+            if ($request->has('q')) {
+                $searchTerm = $request->q;
+                $query->whereHas('products', function($q) use ($searchTerm) {
+                    $q->where('brand', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('model', 'like', '%' . $searchTerm . '%');
+                });
+            }
             
-            if (!$laptopCategory) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Categoría Laptops no encontrada'
-                ], 404);
-            }
-
-            $query = Product::where('category_id', $laptopCategory->category_id)
-                ->with(['prices.store'])
-                ->withCount('prices')
-                ->orderBy('prices_count', 'desc');
-
-            // Filtros opcionales
-            if ($request->has('brand')) {
-                $query->where('brand', 'like', '%' . $request->brand . '%');
-            }
-
-            if ($request->has('min_price')) {
-                $query->whereHas('prices', function($q) use ($request) {
-                    $q->where('price', '>=', $request->min_price);
-                });
-            }
-
-            if ($request->has('max_price')) {
-                $query->whereHas('prices', function($q) use ($request) {
-                    $q->where('price', '<=', $request->max_price);
-                });
-            }
-
-            // Paginación
+            // Pagination
             $perPage = $request->get('per_page', 20);
-            $laptops = $query->paginate($perPage);
+            $groups = $query->paginate($perPage);
 
-            // Transformar datos para incluir mejor precio
-            $laptops->getCollection()->transform(function ($laptop) {
-                $prices = $laptop->prices->map(function ($price) {
-                    return [
-                        'store_name' => $price->store->name_store,
-                        'price' => $price->price,
-                        'url' => $price->product_url, // Usar la URL específica del precio/producto
-                        'logo_url' => ''
-                    ];
-                });
+            // Transform
+            $groups->getCollection()->transform(function ($group) {
+                // Collect all prices from all products in the group
+                $allPrices = collect();
+                $firstProduct = $group->products->first();
+                
+                foreach ($group->products as $product) {
+                    foreach ($product->prices as $price) {
+                        $allPrices->push([
+                            'store_name' => $price->store->name_store ?? 'Unknown',
+                            'price' => $price->price,
+                            'url' => $price->product_url,
+                            'logo_url' => ''
+                        ]);
+                    }
+                }
 
                 return [
-                    'product_id' => $laptop->product_id,
-                    'brand' => $laptop->brand,
-                    'model' => $laptop->model,
-                    'cpu' => $laptop->specs['cpu'] ?? 'N/A',
-                    'ram' => $laptop->specs['ram'] ?? 'N/A',
-                    'storage' => $laptop->specs['storage'] ?? 'N/A',
-                    'display' => $laptop->specs['display'] ?? 'N/A',
-                    'gpu' => $laptop->specs['gpu'] ?? 'Integrada',
-                    'os' => $laptop->specs['os'] ?? 'No especificado',
-                    'specs' => $laptop->specs, // Devolver todos los detalles
-                    'image_url' => $laptop->image_url,
-                    'description' => $laptop->description,
-                    'prices' => $prices,
-                    'min_price' => $prices->min('price') ?? 0,
-                    'max_price' => $prices->max('price') ?? 0,
+                    'group_id' => $group->id,
+                    'name' => $group->name,
+                    'image_url' => $group->image_url ?? $firstProduct->image_url,
+                    // Use specs from the first product as representative
+                    'brand' => $firstProduct->brand,
+                    'model' => $firstProduct->model,
+                    'specs' => $firstProduct->specs,
+                    'prices' => $allPrices,
+                    'min_price' => $allPrices->min('price') ?? 0,
+                    'max_price' => $allPrices->max('price') ?? 0,
                 ];
             });
 
-            return response()->json($laptops, 200);
+            return response()->json($groups, 200);
 
         } catch (\Exception $e) {
             return response()->json([

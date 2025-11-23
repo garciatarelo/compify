@@ -39,6 +39,7 @@ class Product extends Model
         'vram',
         'wattage',
         'efficiency',
+        'product_group_id',
     ];
 
     protected $hidden = [
@@ -59,5 +60,10 @@ class Product extends Model
     public function prices()
     {
         return $this->hasMany(Price::class, 'product_id', 'product_id');
+    }
+
+    public function productGroup()
+    {
+        return $this->belongsTo(ProductGroup::class, 'product_group_id');
     }
 }

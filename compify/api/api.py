@@ -303,8 +303,8 @@ if __name__ == "__main__":
     print("\n--- Scraping Página 1 ---")
     fetch_data(base_url)
     
-    # Páginas 2 a 15
-    for page in range(2, 16):
+    # Páginas 2 a 20
+    for page in range(2, 6):
         print(f"\n--- Scraping Página {page} ---")
         url = f"{base_url}/{page}/"
         fetch_data(url)

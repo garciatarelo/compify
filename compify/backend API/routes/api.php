@@ -73,3 +73,12 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('users', UsersController::class);
     
 });
+
+// Dashboard Routes (Manual Matching)
+Route::prefix('dashboard')->group(function () {
+    Route::get('/products', [App\Http\Controllers\Api\DashboardController::class, 'index']);
+    Route::post('/groups', [App\Http\Controllers\Api\DashboardController::class, 'createGroup']);
+    Route::get('/groups', [App\Http\Controllers\Api\DashboardController::class, 'listGroups']);
+    Route::post('/groups/{id}/add', [App\Http\Controllers\Api\DashboardController::class, 'addToGroup']);
+    Route::post('/groups/{id}/remove', [App\Http\Controllers\Api\DashboardController::class, 'removeFromGroup']);
+});

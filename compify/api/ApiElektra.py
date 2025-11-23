@@ -361,7 +361,7 @@ if __name__ == "__main__":
     # Scrapear múltiples páginas
     base_url = 'https://www.elektra.mx/laptop?_q=laptop&map=ft&page='
     
-    for page in range(1, 16): # Scrapear 15 páginas
+    for page in range(1, 9): # Scrapear 9 páginas
         print(f"\n--- Scraping Página {page} ---")
         url = f"{base_url}{page}"
         fetch_data(url)

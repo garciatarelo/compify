@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Builder from './pages/Builder';
 import Favorites from './pages/Favorites';
 import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
               <Route path="/builder" element={<Builder />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/dashboard" element={<Dashboard />} />
             </Routes>
           </div>
         </BuilderProvider>
