@@ -15,13 +15,6 @@ export const useApp = () => {
 // TODO API: Este contexto manejará el estado global y las llamadas a la API
 // Provider del contexto
 export const AppProvider = ({ children }) => {
-  // Estado de favoritos (guardado en localStorage)
-  // TODO API: Los favoritos se sincronizarán con POST/DELETE /api/users/favorites/{productId}
-  const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
-  });
-
   // Estado de autenticación (simulado)
   // TODO API: El login será POST /api/auth/login con { email, password }
   // TODO API: El token JWT se guardará en localStorage y se enviará en headers
@@ -29,6 +22,20 @@ export const AppProvider = ({ children }) => {
     const saved = localStorage.getItem('user');
     return saved ? JSON.parse(saved) : null;
   });
+
+  // Estado de favoritos por usuario (guardado en localStorage)
+  // Cada usuario tiene su propia lista de favoritos
+  const [favorites, setFavorites] = useState([]);
+
+  // Restaurar favoritos al iniciar sesión
+  useEffect(() => {
+    if (user && user.email) {
+      const saved = localStorage.getItem(`favorites_${user.email}`);
+      setFavorites(saved ? JSON.parse(saved) : []);
+    } else {
+      setFavorites([]);
+    }
+  }, [user]);
 
   // Estado de filtros para productos
   const [filters, setFilters] = useState({
@@ -46,12 +53,14 @@ export const AppProvider = ({ children }) => {
   // Estado de modales
   const [activeModal, setActiveModal] = useState(null);
 
-  // Guardar favoritos en localStorage cuando cambien
+  // Guardar favoritos en localStorage por usuario cuando cambien
   useEffect(() => {
-    localStorage.setItem('favorites', JSON.stringify(favorites));
-  }, [favorites]);
+    if (user && user.email) {
+      localStorage.setItem(`favorites_${user.email}`, JSON.stringify(favorites));
+    }
+  }, [favorites, user]);
 
-  // Guardar usuario en localStorage cuando cambie
+  // Guardar al usuario en localStorage cuando cambie
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
@@ -61,18 +70,23 @@ export const AppProvider = ({ children }) => {
   }, [user]);
 
   // Funciones para manejar favoritos
-  // TODO API: addFavorite hará POST /api/users/favorites con { productId }
   const addFavorite = (productId) => {
     if (!favorites.includes(productId)) {
-      setFavorites([...favorites, productId]);
-      // TODO API: await fetch('/api/users/favorites', { method: 'POST', body: { productId } })
+      const newFavorites = [...favorites, productId];
+      setFavorites(newFavorites);
+      if (user && user.email) {
+        localStorage.setItem(`favorites_${user.email}`, JSON.stringify(newFavorites));
+      }
     }
   };
 
-  // TODO API: removeFavorite hará DELETE /api/users/favorites/{productId}
+  
   const removeFavorite = (productId) => {
-    setFavorites(favorites.filter(id => id !== productId));
-    // TODO API: await fetch(`/api/users/favorites/${productId}`, { method: 'DELETE' })
+    const newFavorites = favorites.filter(id => id !== productId);
+    setFavorites(newFavorites);
+    if (user && user.email) {
+      localStorage.setItem(`favorites_${user.email}`, JSON.stringify(newFavorites));
+    }
   };
 
   const toggleFavorite = (productId) => {
@@ -92,8 +106,20 @@ export const AppProvider = ({ children }) => {
   };
 
   // Funciones para autenticación
-  const login = async (username, password) => {
-    if (!username || !password) return false;
+  const login = async (input, password) => {
+    if (!input || !password) return false;
+    let email = input;
+    let username = input;
+    // Si es email, extraer username
+    if (input.includes('@')) {
+      email = input;
+      username = input.split('@')[0];
+    } else {
+      // Si es username, construir email
+      if (input === 'admin') email = 'admin@gmail.com';
+      else if (input === 'marialopez') email = 'maria@gmail.com';
+      else email = `${input}@example.com`;
+    }
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
         method: 'POST',
@@ -102,13 +128,14 @@ export const AppProvider = ({ children }) => {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          email: `${username}@example.com`, // El backend espera 'email'
+          email,
+          username,
           password
         })
       });
       const data = await response.json();
       if (response.ok && data.user) {
-        setUser(data.user); // data.user contiene el usuario
+        setUser(data.user);
         return true;
       }
       return false;
@@ -119,6 +146,7 @@ export const AppProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    setFavorites([]); // Limpiar favoritos solo en memoria, no en localStorage
   };
 
   // Funciones para filtros

@@ -13,7 +13,11 @@ function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      if (user.email === 'admin@gmail.com') {
+        navigate('/dashboard');
+      } else {
+        navigate('/');
+      }
     }
   }, [user, navigate]);
 
@@ -22,7 +26,7 @@ function Login() {
     return null;
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -31,9 +35,16 @@ function Login() {
       return;
     }
 
-    const success = login(username, password);
+    // Permitir login con username o email
+    let loginEmail = username;
+    if (!loginEmail.includes('@')) {
+      // Si no es email, usar username y construir el email
+      if (username === 'admin') loginEmail = 'admin@gmail.com';
+      else loginEmail = `${username}@example.com`;
+    }
+    const success = await login(loginEmail.replace(/\s+/g, ''), password);
     if (success) {
-      navigate('/');
+      // La redirección se maneja en el useEffect
     } else {
       setError('Credenciales inválidas');
     }

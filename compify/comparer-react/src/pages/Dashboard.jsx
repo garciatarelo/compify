@@ -175,46 +175,46 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Dashboard de Emparejamiento</h1>
-      
-      <div className="mb-4 flex gap-2">
+      <h1 className="text-3xl font-extrabold mb-8 text-center">Dashboard de Emparejamiento</h1>
+
+      <div className="mb-6 flex gap-4">
         <button 
           onClick={() => setProductType('laptops')}
-          className={`px-4 py-2 rounded ${productType === 'laptops' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          className={`px-5 py-2 rounded-lg shadow font-semibold transition-colors duration-150 ${productType === 'laptops' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-blue-700'}`}
         >
           Laptops
         </button>
         <button 
           onClick={() => setProductType('components')}
-          className={`px-4 py-2 rounded ${productType === 'components' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          className={`px-5 py-2 rounded-lg shadow font-semibold transition-colors duration-150 ${productType === 'components' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-blue-700'}`}
         >
           Componentes
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Unmatched Products */}
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-xl font-semibold mb-2">Productos Sin Agrupar</h2>
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        {/* Unmatched Products: ocupa 3/5 */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-blue-100 md:col-span-3">
+          <h2 className="text-2xl font-bold mb-4 text-blue-600 text-center">Productos Sin Agrupar</h2>
           <input 
             type="text" 
             placeholder="Buscar..." 
-            className="w-full p-2 border rounded mb-2"
+            className="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-400"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div className="flex flex-wrap gap-3 mb-4">
             <button 
               onClick={createGroup}
               disabled={selectedProducts.length === 0}
-              className="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-300"
+              className="bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors disabled:bg-gray-300"
             >
               Crear Nuevo Grupo ({selectedProducts.length})
             </button>
 
             <div className="flex gap-2 items-center">
               <select 
-                className="border rounded p-2"
+                className="border rounded-lg p-2 shadow"
                 value={selectedGroupToAdd}
                 onChange={(e) => setSelectedGroupToAdd(e.target.value)}
                 disabled={selectedProducts.length === 0}
@@ -229,25 +229,25 @@ const Dashboard = () => {
               <button 
                 onClick={addToExistingGroup}
                 disabled={selectedProducts.length === 0 || !selectedGroupToAdd}
-                className="bg-green-600 text-white px-4 py-2 rounded disabled:bg-gray-300"
+                className="bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors disabled:bg-gray-300"
               >
                 Añadir
               </button>
             </div>
           </div>
-          
-          <div className="h-96 overflow-y-auto">
-            {loading ? <p>Cargando...</p> : (
+
+          <div className="h-96 overflow-y-auto rounded-lg border border-gray-100">
+            {loading ? <p className="text-center text-blue-500 font-semibold">Cargando...</p> : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr>
-                    <th>Select</th>
-                    <th>Tienda</th>
-                    <th>Marca</th>
-                    <th>Modelo</th>
-                    <th>Precio</th>
-                    <th>Link</th>
-                    <th>Acciones</th>
+                  <tr className="bg-blue-50">
+                    <th className="p-2">Select</th>
+                    <th className="p-2">Tienda</th>
+                    <th className="p-2">Marca</th>
+                    <th className="p-2">Modelo</th>
+                    <th className="p-2">Precio</th>
+                    <th className="p-2">Link</th>
+                    <th className="p-2">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -255,14 +255,14 @@ const Dashboard = () => {
                     <React.Fragment key={groupName}>
                       {/* Header del Grupo Visual */}
                       <tr className="bg-gray-100 border-b border-gray-300">
-                        <td colSpan="6" className="p-2">
+                        <td colSpan="7" className="p-2 rounded-t-lg">
                           <div className="flex justify-between items-center">
-                            <span className="font-bold text-gray-700 uppercase text-xs tracking-wider">
+                            <span className="font-bold text-blue-700 uppercase text-xs tracking-wider">
                               {groupName} <span className="text-gray-500">({groupItems.length})</span>
                             </span>
                             <button 
                               onClick={() => handleSelectGroup(groupItems)}
-                              className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-200 hover:bg-blue-100"
+                              className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded border border-blue-200 hover:bg-blue-200"
                             >
                               Seleccionar todos
                             </button>
@@ -271,7 +271,7 @@ const Dashboard = () => {
                       </tr>
                       {/* Items del Grupo */}
                       {groupItems.map(product => (
-                        <tr key={product.product_id} className="border-b hover:bg-gray-50">
+                        <tr key={product.product_id} className="border-b hover:bg-blue-50 transition-all">
                           <td className="p-2 pl-4">
                             <input 
                               type="checkbox" 
@@ -298,10 +298,10 @@ const Dashboard = () => {
                           <td className="p-2">
                             <button 
                               onClick={() => deleteProduct(product.product_id)}
-                              className="text-red-600 hover:text-red-800 px-2 py-1"
+                              className="bg-red-600 text-white px-3 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center"
                               title="Eliminar producto"
                             >
-                              🗑️
+                              <span className="text-black">🗑️</span>
                             </button>
                           </td>
                         </tr>
@@ -312,21 +312,21 @@ const Dashboard = () => {
               </table>
             )}
           </div>
-          
+
           {/* Pagination Controls */}
-          <div className="flex justify-between items-center mt-2">
+          <div className="flex justify-between items-center mt-4">
             <button 
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="bg-gray-300 px-3 py-1 rounded disabled:opacity-50"
+              className="bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors disabled:bg-gray-300"
             >
               Anterior
             </button>
-            <span>Página {page} de {totalPages}</span>
+            <span className="font-semibold text-blue-700">Página {page} de {totalPages}</span>
             <button 
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="bg-gray-300 px-3 py-1 rounded disabled:opacity-50"
+              className="bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition-colors disabled:bg-gray-300"
             >
               Siguiente
             </button>
@@ -334,21 +334,21 @@ const Dashboard = () => {
 
         </div>
 
-        {/* Groups */}
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-xl font-semibold mb-2">Grupos Existentes</h2>
-          <div className="h-96 overflow-y-auto">
+        {/* Groups: ocupa 2/5 */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-blue-100 md:col-span-2">
+          <h2 className="text-2xl font-bold mb-4 text-blue-600 text-center">Grupos Existentes</h2>
+          <div className="h-96 overflow-y-auto rounded-lg border border-gray-100">
             {groups.map(group => (
-              <div key={group.id} className="border rounded p-2 mb-2">
-                <div className="flex justify-between items-center bg-gray-100 p-2">
-                  <span className="font-bold">{group.name}</span>
-                  <span className="text-xs text-gray-500">ID: {group.id}</span>
+              <div key={group.id} className="border rounded-xl p-3 mb-4 shadow hover:shadow-lg transition-all bg-blue-50">
+                <div className="flex justify-between items-center bg-blue-100 p-3 rounded-t-xl">
+                  <span className="font-bold text-blue-700 text-lg">{group.name}</span>
+                  <span className="text-xs text-blue-600">ID: {group.id}</span>
                 </div>
-                <div className="p-2">
+                <div className="p-3">
                   {group.products.map(prod => (
-                    <div key={prod.product_id} className="flex justify-between text-sm border-b py-1">
+                    <div key={prod.product_id} className="flex justify-between text-sm border-b py-2 hover:bg-blue-200 transition-all rounded">
                       <span>
-                        {prod.prices[0]?.store?.name_store}: {prod.brand} {prod.model}
+                        {prod.prices[0]?.store?.name_store}: <span className="font-semibold">{prod.brand} {prod.model}</span>
                         {prod.prices[0]?.product_url && (
                           <a 
                             href={prod.prices[0].product_url} 
@@ -362,7 +362,7 @@ const Dashboard = () => {
                       </span>
                       <button 
                         onClick={() => ungroup(group.id, [prod.product_id])}
-                        className="text-red-500 text-xs"
+                        className="text-red-500 text-xs font-bold px-2 py-1 rounded-lg bg-red-100 hover:bg-red-200"
                       >
                         X
                       </button>

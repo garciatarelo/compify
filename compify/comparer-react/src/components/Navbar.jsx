@@ -33,39 +33,51 @@ function Navbar() {
     <nav className="bg-blue-600 text-white shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Solo nombre como logo */}
-          <Link to="/" className="text-2xl font-bold">Compify</Link>
+          {/* Logo Compify con redirección condicional para admin */}
+          {user && user.email === 'admin@gmail.com' && location.pathname === '/dashboard' ? (
+            <Link to="/dashboard" className="text-2xl font-bold">Compify</Link>
+          ) : (
+            <Link to="/" className="text-2xl font-bold">Compify</Link>
+          )}
 
           {/* Navigation Links y Usuario/Login/Registro */}
           {!hideMainNav && (
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <Link
-                  to="/"
-                  className={`px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-base font-semibold ${isActive('/')}`}
-                >
-                  Inicio
-                </Link>
-                <Link
-                  to={user ? "/builder" : location.pathname}
-                  className={`px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-base font-semibold ${isActive('/builder')}`}
-                  onClick={e => handleProtectedNav(e, '/builder')}
-                >
-                  Arma tu PC
-                </Link>
-                <Link
-                  to={user ? "/favorites" : location.pathname}
-                  className={`px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-base font-semibold ${isActive('/favorites')}`}
-                  onClick={e => handleProtectedNav(e, '/favorites')}
-                >
-                  <Heart size={22} fill={favorites.length > 0 ? 'currentColor' : 'none'} />
-                  <span>Favoritos</span>
-                  {favorites.length > 0 && (
-                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                      {favorites.length}
-                    </span>
-                  )}
-                </Link>
+                {/* Ocultar Inicio y Favoritos solo para admin en dashboard */}
+                {!(user && user.email === 'admin@gmail.com' && location.pathname === '/dashboard') && (
+                  <>
+                    <Link
+                      to="/"
+                      className={`px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-base font-semibold ${isActive('/')}`}
+                    >
+                      Inicio
+                    </Link>
+                    <Link
+                      to={user ? "/favorites" : location.pathname}
+                      className={`px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-base font-semibold ${isActive('/favorites')}`}
+                      onClick={e => handleProtectedNav(e, '/favorites')}
+                    >
+                      <Heart size={22} fill={favorites.length > 0 ? 'currentColor' : 'none'} />
+                      <span>Favoritos</span>
+                      {favorites.length > 0 && (
+                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                          {favorites.length}
+                        </span>
+                      )}
+                    </Link>
+                  </>
+                )}
+                {/* Ocultar 'Arma tu PC' solo para admin en dashboard */}
+                {!(user && user.email === 'admin@gmail.com' && location.pathname === '/dashboard') && (
+                  <Link
+                    to={user ? "/builder" : location.pathname}
+                    className={`px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-base font-semibold ${isActive('/builder')}`}
+                    onClick={e => handleProtectedNav(e, '/builder')}
+                  >
+                    Arma tu PC
+                  </Link>
+                )}
               </div>
               {/* Usuario o botones de login/registro */}
               <div className="flex items-center gap-3">
