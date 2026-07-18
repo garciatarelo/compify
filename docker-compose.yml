@@ -1,0 +1,58 @@
+services:
+  frontend:
+    build:
+      context: ./compify/comparer-react
+      dockerfile: Dockerfile.frontend
+    image: zekken03x/compify-frontend:latest
+    container_name: compify_frontend
+    restart: always
+    ports:
+      - "3005:80"
+    depends_on:
+      - backend
+    networks:
+      - compify_net
+
+  backend:
+    build:
+      context: "./compify/backend API"
+      dockerfile: Dockerfile.backend
+    image: zekken03x/compify-backend:latest
+    container_name: compify_backend
+    restart: always
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - APP_KEY=${APP_KEY}
+      - APP_DEBUG=false
+      - APP_ENV=production
+      - APP_URL=http://localhost:3005
+    depends_on:
+      - db
+    networks:
+      - compify_net
+
+  db:
+    image: mariadb:10.6
+    container_name: compify_db
+    restart: always
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DB_PASSWORD}
+      - MARIADB_DATABASE=${DB_DATABASE}
+      - MARIADB_USER=${DB_USERNAME}
+      - MARIADB_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - compify_db_data:/var/lib/mysql
+    networks:
+      - compify_net
+
+networks:
+  compify_net:
+    driver: bridge
+
+volumes:
+  compify_db_data:

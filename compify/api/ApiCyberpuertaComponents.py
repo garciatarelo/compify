@@ -6,7 +6,7 @@ import random
 import json
 
 # URL del endpoint público para carga masiva de componentes
-url_api = "http://127.0.0.1:8000/api/components/bulk"
+url_api = "http://192.168.0.24:3005/api/components/bulk"
 
 headers_laravel = {
     'Accept': 'application/json',

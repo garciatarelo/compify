@@ -5,7 +5,7 @@ import time
 import random
 
 # URL del endpoint público para carga masiva de laptops
-url_api = "http://127.0.0.1:8000/api/laptops/bulk"
+url_api = "http://192.168.0.24:3005/api/laptops/bulk"
 
 headers_scraping = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'

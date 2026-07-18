@@ -6,7 +6,7 @@ import random
 import json
 
 # URL del endpoint público para carga masiva de laptops
-url_api = "http://127.0.0.1:8000/api/laptops/bulk"
+url_api = "http://192.168.0.24:3005/api/laptops/bulk"
 
 headers_laravel = {
     'Accept': 'application/json',
